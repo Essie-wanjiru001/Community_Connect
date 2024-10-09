@@ -1,17 +1,17 @@
 import React from 'react';
 
 interface SearchResultsProps {
-  results: Array<any>;
+  results: any[];
 }
 
 const SearchResults: React.FC<SearchResultsProps> = ({ results }) => {
   return (
-    <div>
-      <h2>Search Results</h2>
+    <div className="mt-8">
+      <h2 className="text-2xl font-bold text-gray-800">Search Results</h2>
       {results.length > 0 ? (
-        <ul>
+        <ul className="mt-4 space-y-4">
           {results.map((result, index) => (
-            <li key={index}>
+            <li key={index} className="p-4 border rounded-md shadow-sm bg-gray-50">
               <p><strong>Name:</strong> {result.name}</p>
               <p><strong>Service Type:</strong> {result.serviceType}</p>
               <p><strong>Location:</strong> {result.location}</p>
@@ -20,7 +20,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ results }) => {
           ))}
         </ul>
       ) : (
-        <p>No results found</p>
+        <p className="text-gray-700 mt-4">No results found</p>
       )}
     </div>
   );

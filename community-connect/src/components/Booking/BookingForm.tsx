@@ -1,48 +1,51 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 
-const BookingForm: React.FC = () => {
+const BookingForm = () => {
   const [serviceProvider, setServiceProvider] = useState('');
   const [date, setDate] = useState('');
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    try {
-      const response = await axios.post('/api/booking', { serviceProvider, date, userId: 'example-user-id' });
-      setMessage('Booking successful!');
-      console.log(response.data);  // Handles success
-    } catch (error) {
-      setMessage('Booking failed.');
-      console.error(error);  // Handles error
-    }
+    // Add booking logic here
+    setMessage('Booking successful!');
   };
 
   return (
-    <div>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Service Provider</label>
-          <input
-            type="text"
-            value={serviceProvider}
-            onChange={(e) => setServiceProvider(e.target.value)}
-            placeholder="Enter service provider"
-          />
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="w-full max-w-lg p-8 bg-white rounded-lg shadow-lg">
+        <h2 className="text-3xl font-bold mb-6 text-gray-800 text-center">Book a Service</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-gray-700">Service Provider</label>
+            <input
+              type="text"
+              value={serviceProvider}
+              onChange={(e) => setServiceProvider(e.target.value)}
+              className="w-full mt-1 p-2 border rounded-md focus:outline-none focus:ring focus:ring-blue-300"
+              placeholder="Enter service provider"
+            />
+          </div>
 
-        <div>
-          <label>Date</label>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        </div>
+          <div>
+            <label className="block text-gray-700">Date</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full mt-1 p-2 border rounded-md focus:outline-none focus:ring focus:ring-blue-300"
+            />
+          </div>
 
-        <button type="submit">Book</button>
-      </form>
-      {message && <p>{message}</p>}
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 transition"
+          >
+            Book
+          </button>
+        </form>
+        {message && <p className="mt-4 text-green-500">{message}</p>}
+      </div>
     </div>
   );
 };

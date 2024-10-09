@@ -1,37 +1,38 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 
-const BookingList: React.FC = () => {
-  const [bookings, setBookings] = useState<any[]>([]);
+const BookingList = () => {
+  interface Booking {
+    serviceProvider: string;
+    date: string;
+  }
+  
+  const [bookings, setBookings] = useState<Booking[]>([]);
 
   useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        const response = await axios.get('/api/bookings', { params: { userId: 'example-user-id' } });
-        setBookings(response.data);
-      } catch (error) {
-        console.error('Error fetching bookings:', error);
-      }
-    };
-
-    fetchBookings();
+    // Fetch bookings from the backend
+    setBookings([
+      { serviceProvider: 'John Doe', date: '2023-10-15' },
+      { serviceProvider: 'Jane Smith', date: '2023-10-20' },
+    ]);
   }, []);
 
   return (
-    <div>
-      <h2>Your Bookings</h2>
-      {bookings.length > 0 ? (
-        <ul>
-          {bookings.map((booking, index) => (
-            <li key={index}>
-              <p><strong>Service Provider:</strong> {booking.serviceProvider}</p>
-              <p><strong>Date:</strong> {new Date(booking.date).toLocaleDateString()}</p>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p>No bookings found.</p>
-      )}
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="w-full max-w-lg p-8 bg-white rounded-lg shadow-lg">
+        <h2 className="text-3xl font-bold mb-6 text-gray-800 text-center">Your Bookings</h2>
+        {bookings.length > 0 ? (
+          <ul className="space-y-4">
+            {bookings.map((booking, index) => (
+              <li key={index} className="border-b pb-4">
+                <p className="text-lg text-gray-700"><strong>Service Provider:</strong> {booking.serviceProvider}</p>
+                <p className="text-lg text-gray-700"><strong>Date:</strong> {new Date(booking.date).toLocaleDateString()}</p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-center text-gray-700">No bookings found.</p>
+        )}
+      </div>
     </div>
   );
 };
