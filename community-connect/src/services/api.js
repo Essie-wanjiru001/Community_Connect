@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Set base URL for backend API
-const API_URL = 'http://localhost:3000/api'; // Point to backend server
+const API_URL = 'http://localhost:5000/api'; // Point to backend server
 
 // ==============================
 // Booking APIs
@@ -181,8 +181,9 @@ export const loginUser = async (loginData) => {
   try {
     const response = await axios.post(`${API_URL}/auth/login`, loginData);
     return response.data;
-  } catch (error) {
-    console.error('Error logging in user', error);
+  } catch (error)   
+ {
+    console.error('Error logging in user:', error);
     throw error;
   }
 };
@@ -190,10 +191,13 @@ export const loginUser = async (loginData) => {
 // User registration
 export const registerUser = async (registerData) => {
   try {
-    const response = await axios.post(`${API_URL}/auth/register`, registerData);
+    const response = await axios.post(`${API_URL}/auth/register`, registerData, {
+      headers: { 'Content-Type': 'application/json' }
+    });
     return response.data;
   } catch (error) {
-    console.error('Error registering user', error);
+    console.error('Error registering user:', error);
     throw error;
   }
 };
+

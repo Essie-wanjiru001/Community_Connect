@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { registerUser } from '../../services/api';
+import { useNavigate } from 'react-router-dom';
 
 const Register: React.FC = () => {
+  const navigate = useNavigate();
+  const [successMessage, setSuccessMessage] = useState('');
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg">
@@ -20,11 +24,19 @@ const Register: React.FC = () => {
             try {
               const userData = await registerUser(values);
               console.log('Registration successful', userData);
+
+              // Set the success message
+              setSuccessMessage('Registration successful');
+
+              // Navigate to the login page after successful registration
+              navigate('/login');
             } catch (error) {
               console.error('Error during registration:', error);
               setErrors({ email: 'Registration failed' });
+              setSuccessMessage(''); // Clear success message on error
+            } finally {
+              setSubmitting(false);
             }
-            setSubmitting(false);
           }}
         >
           {({ isSubmitting }) => (
@@ -56,6 +68,11 @@ const Register: React.FC = () => {
               >
                 {isSubmitting ? 'Registering...' : 'Register'}
               </button>
+              {successMessage && (
+                <div className="text-green-500 mt-4">
+                  {successMessage}
+                </div>
+              )}
             </Form>
           )}
         </Formik>
