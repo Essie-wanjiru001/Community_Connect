@@ -22,13 +22,24 @@ const Login: React.FC = () => {
           })}
           onSubmit={async (values, { setSubmitting, setErrors }) => {
             try {
+              // Attempt to log in user
               const userData = await loginUser(values);
+              console.log('Login successful:', userData);
+              
+              // Dispatch login action to Redux
               dispatch(login(userData));
-              console.log('Login successful', userData);
-              navigate('/home'); // naviage to the home page
-            } catch (error) {
-              console.error('Error logging in', error);
-              setErrors({ email: 'Invalid credentials' });
+              
+              // Navigate to the home page
+              navigate('/home');
+            } catch (error: any) {
+              console.error('Error logging in user:', error);
+              
+              // Set error message for invalid credentials
+              if (error.response && error.response.data) {
+                setErrors({ email: error.response.data.message || 'Invalid credentials' });
+              } else {
+                setErrors({ email: 'Invalid credentials' });
+              }
             } finally {
               setSubmitting(false);
             }

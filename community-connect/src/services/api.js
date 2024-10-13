@@ -13,7 +13,7 @@ export const fetchBookings = async () => {
     const response = await axios.get(`${API_URL}/bookings`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching bookings', error);
+    console.error('Error fetching bookings', error.response || error);
     throw error;
   }
 };
@@ -21,10 +21,12 @@ export const fetchBookings = async () => {
 // Create a new booking
 export const createBooking = async (bookingData) => {
   try {
-    const response = await axios.post(`${API_URL}/bookings`, bookingData);
+    const response = await axios.post(`${API_URL}/bookings`, bookingData, {
+      headers: { 'Content-Type': 'application/json' }
+    });
     return response.data;
   } catch (error) {
-    console.error('Error creating booking', error);
+    console.error('Error creating booking', error.response || error);
     throw error;
   }
 };
@@ -32,10 +34,12 @@ export const createBooking = async (bookingData) => {
 // Update an existing booking
 export const updateBooking = async (bookingId, bookingData) => {
   try {
-    const response = await axios.put(`${API_URL}/bookings/${bookingId}`, bookingData);
+    const response = await axios.put(`${API_URL}/bookings/${bookingId}`, bookingData, {
+      headers: { 'Content-Type': 'application/json' }
+    });
     return response.data;
   } catch (error) {
-    console.error('Error updating booking', error);
+    console.error('Error updating booking', error.response || error);
     throw error;
   }
 };
@@ -46,7 +50,7 @@ export const deleteBooking = async (bookingId) => {
     const response = await axios.delete(`${API_URL}/bookings/${bookingId}`);
     return response.data;
   } catch (error) {
-    console.error('Error deleting booking', error);
+    console.error('Error deleting booking', error.response || error);
     throw error;
   }
 };
@@ -63,7 +67,7 @@ export const fetchReviews = async (serviceId) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching reviews', error);
+    console.error('Error fetching reviews', error.response || error);
     throw error;
   }
 };
@@ -71,10 +75,12 @@ export const fetchReviews = async (serviceId) => {
 // Submit a new review
 export const submitReview = async (reviewData) => {
   try {
-    const response = await axios.post(`${API_URL}/reviews/add`, reviewData);
+    const response = await axios.post(`${API_URL}/reviews/add`, reviewData, {
+      headers: { 'Content-Type': 'application/json' }
+    });
     return response.data;
   } catch (error) {
-    console.error('Error submitting review', error);
+    console.error('Error submitting review', error.response || error);
     throw error;
   }
 };
@@ -82,10 +88,12 @@ export const submitReview = async (reviewData) => {
 // Update an existing review
 export const updateReview = async (reviewId, reviewData) => {
   try {
-    const response = await axios.put(`${API_URL}/reviews/${reviewId}`, reviewData);
+    const response = await axios.put(`${API_URL}/reviews/${reviewId}`, reviewData, {
+      headers: { 'Content-Type': 'application/json' }
+    });
     return response.data;
   } catch (error) {
-    console.error('Error updating review', error);
+    console.error('Error updating review', error.response || error);
     throw error;
   }
 };
@@ -96,7 +104,7 @@ export const deleteReview = async (reviewId) => {
     const response = await axios.delete(`${API_URL}/reviews/${reviewId}`);
     return response.data;
   } catch (error) {
-    console.error('Error deleting review', error);
+    console.error('Error deleting review', error.response || error);
     throw error;
   }
 };
@@ -113,7 +121,7 @@ export const searchItems = async (query) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error searching items', error);
+    console.error('Error searching items', error.response || error);
     throw error;
   }
 };
@@ -130,7 +138,7 @@ export const fetchChatMessages = async (senderId, receiverId) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching chat messages', error);
+    console.error('Error fetching chat messages', error.response || error);
     throw error;
   }
 };
@@ -138,10 +146,12 @@ export const fetchChatMessages = async (senderId, receiverId) => {
 // Send a new chat message
 export const sendChatMessage = async (messageData) => {
   try {
-    const response = await axios.post(`${API_URL}/chats`, messageData);
+    const response = await axios.post(`${API_URL}/chats`, messageData, {
+      headers: { 'Content-Type': 'application/json' }
+    });
     return response.data;
   } catch (error) {
-    console.error('Error sending chat message', error);
+    console.error('Error sending chat message', error.response || error);
     throw error;
   }
 };
@@ -156,7 +166,7 @@ export const fetchUserProfile = async (userId) => {
     const response = await axios.get(`${API_URL}/users/${userId}`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching user profile', error);
+    console.error('Error fetching user profile', error.response || error);
     throw error;
   }
 };
@@ -166,11 +176,10 @@ export const fetchUserProfile = async (userId) => {
 // The userId will be fetched from the user's authentication context (like from Redux).
 export const updateUserProfile = async (profileData) => {
   try {
-    const userId = profileData.id; // Assuming `profileData` contains an `id` property
     const response = await axios.put(`${API_URL}/users/${userId}`, profileData);
     return response.data;
   } catch (error) {
-    console.error('Error updating user profile', error);
+    console.error('Error updating user profile', error.response || error);
     throw error;
   }
 };
@@ -182,11 +191,12 @@ export const updateUserProfile = async (profileData) => {
 // User login
 export const loginUser = async (loginData) => {
   try {
-    const response = await axios.post(`${API_URL}/auth/login`, loginData);
+    const response = await axios.post(`${API_URL}/auth/login`, loginData, {
+      headers: { 'Content-Type': 'application/json' }
+    });
     return response.data;
-  } catch (error)   
- {
-    console.error('Error logging in user:', error);
+  } catch (error) {
+    console.error('Error logging in user:', error.response || error);
     throw error;
   }
 };
@@ -199,8 +209,7 @@ export const registerUser = async (registerData) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error registering user:', error);
+    console.error('Error registering user:', error.response || error);
     throw error;
   }
 };
-
