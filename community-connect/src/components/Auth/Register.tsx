@@ -9,12 +9,13 @@ const Register: React.FC = () => {
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg">
         <h2 className="text-3xl font-bold mb-6 text-gray-800 text-center">Register</h2>
         <Formik
-          initialValues={{ name: '', email: '', password: '', confirmPassword: '' }}
+          initialValues={{ name: '', email: '', password: '', confirmPassword: '', userType: '' }}
           validationSchema={Yup.object({
             name: Yup.string().required('Name is required'),
             email: Yup.string().email('Invalid email address').required('Email is required'),
             password: Yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
             confirmPassword: Yup.string().oneOf([Yup.ref('password'), undefined], 'Passwords must match').required('Confirm password is required'),
+            userType: Yup.string().required('Please select a user type'),
           })}
           onSubmit={async (values, { setSubmitting, setErrors }) => {
             try {
@@ -48,6 +49,16 @@ const Register: React.FC = () => {
                 <label className="block text-gray-700">Confirm Password</label>
                 <Field name="confirmPassword" type="password" className="w-full p-2 border rounded-md" />
                 <ErrorMessage name="confirmPassword" component="div" className="text-red-500" />
+              </div>
+              <div>
+                <label className="block text-gray-700">User Type</label>
+                <Field as="select" name="userType" className="w-full p-2 border rounded-md">
+                  <option value="">Select your role</option>
+                  <option value="business">Business</option>
+                  <option value="artisan">Artisan</option>
+                  <option value="consumer">Consumer</option>
+                </Field>
+                <ErrorMessage name="userType" component="div" className="text-red-500" />
               </div>
               <button
                 type="submit"

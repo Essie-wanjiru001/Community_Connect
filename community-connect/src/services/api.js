@@ -162,8 +162,11 @@ export const fetchUserProfile = async (userId) => {
 };
 
 // Update user profile
-export const updateUserProfile = async (userId, profileData) => {
+// Now this function takes only the profile data.
+// The userId will be fetched from the user's authentication context (like from Redux).
+export const updateUserProfile = async (profileData) => {
   try {
+    const userId = profileData.id; // Assuming `profileData` contains an `id` property
     const response = await axios.put(`${API_URL}/users/${userId}`, profileData);
     return response.data;
   } catch (error) {
