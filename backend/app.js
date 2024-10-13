@@ -1,32 +1,32 @@
+require('dotenv').config();
 const express = require('express');
 const connectDB = require('./config/db');
-const session = require('express-session');
-const passport = require('./config/passport'); 
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
-require('dotenv').config();
+const passport = require('passport');  // Keeping this for other uses if needed
+const session = require('express-session');  // Keeping this for session-based purposes
 
 const app = express();
 
 // Connect to the database
 connectDB().catch(err => console.error('Error connecting to MongoDB:', err));
 
-// Enable CORS
+// Enable CORS for React Frontend
 const corsOptions = {
-  origin: 'http://localhost:3000',  // react frontend url
+  origin: 'http://localhost:3000',  // Adjust based on your frontend URL
   methods: 'GET,POST,PUT,DELETE',
-  credentials: true, 
+  credentials: true,
 };
 
 app.use(cors(corsOptions));
 
-
-// Middleware
+// Middleware for parsing JSON and URL-encoded data
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Session management (if you're using Passport for other purposes)
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-secret-key', 
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -36,16 +36,16 @@ app.use(session({
   }
 }));
 
-// Initialize Passport.js
+// Initialize Passport.js (if needed for other routes)
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Basic Route
+// Basic route for testing the server
 app.get('/', (req, res) => {
   res.send('Hello, welcome to the Community Connect API!');
 });
 
-// Auth routes
+// Authentication routes for registration and login
 app.use('/api/auth', authRoutes);
 
 // Start the server
