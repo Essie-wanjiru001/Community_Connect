@@ -39,6 +39,7 @@ const ProfileForm: React.FC = () => {
 
   const onSubmit = (values: typeof initialValues) => {
       console.log('Form data', values);
+      alert('Form submitted successfully!');
   };
 
   return (
