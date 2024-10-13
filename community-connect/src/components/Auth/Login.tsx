@@ -4,9 +4,11 @@ import * as Yup from 'yup';
 import { loginUser } from '../../services/api';
 import { useDispatch } from 'react-redux';
 import { login } from '../redux/slices/authSlice';
+import { useNavigate } from 'react-router-dom';
 
 const Login: React.FC = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -23,11 +25,13 @@ const Login: React.FC = () => {
               const userData = await loginUser(values);
               dispatch(login(userData));
               console.log('Login successful', userData);
+              navigate('/home'); // naviage to the home page
             } catch (error) {
               console.error('Error logging in', error);
               setErrors({ email: 'Invalid credentials' });
+            } finally {
+              setSubmitting(false);
             }
-            setSubmitting(false);
           }}
         >
           {({ isSubmitting }) => (

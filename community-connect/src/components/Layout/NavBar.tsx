@@ -20,7 +20,7 @@ const Navbar: React.FC = () => {
   );
 
   return (
-    <nav className="bg-blue-600 p-4 sticky top-0 z-50">
+    <nav className="bg-blue-900 text-white p-4 sticky top-0 z-50">
       <div className="container mx-auto flex justify-between items-center">
         {/* Logo */}
         <Link to="/" className="text-white text-2xl font-bold">Community Connect</Link>

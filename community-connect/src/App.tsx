@@ -1,4 +1,5 @@
 import React from 'react';
+import 'animate.css';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import ProfileView from './components/Profile/ProfileView';
 import ProfileForm from './components/Profile/ProfileForm';
