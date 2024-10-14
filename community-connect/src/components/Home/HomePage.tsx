@@ -30,17 +30,18 @@ const HomePage: React.FC = () => {
             Connecting local businesses, artisans, and service providers with your community.
           </p>
 
-          {/* Search Bar */}
-          <div className="relative mx-auto max-w-xl">
+          {/* Updated Search Bar */}
+          <div className="relative mx-auto max-w-xl mt-8">
             <input
               type="text"
               placeholder="What service are you looking for?"
-              className="w-full p-4 pr-20 rounded-full text-gray-700 focus:outline-none"
+              className="w-full p-4 pr-15 rounded-full text-gray-700 focus:outline-none border-2 border-gray-300 shadow-lg text-lg font-semibold"
             />
-            <button className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-500 text-white px-6 py-2 rounded-full hover:bg-blue-600 transition-all duration-300">
-              <FaSearch />
+            <button className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-all duration-300 flex items-center justify-center shadow-lg mb-10">
+              <FaSearch size={18} />
             </button>
           </div>
+
 
           {/* Call to Action Button */}
           {!isAuthenticated ? (
@@ -132,6 +133,7 @@ const HomePage: React.FC = () => {
               Furniture Assembly
             </button>
             <button className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-full hover:bg-gray-200 transition">
+              Home Appliances
               Home Appliances
             </button>
             <button className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-full hover:bg-gray-200 transition">
