@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import { registerUser } from '../../services/api';
+import { registerUser } from '../../services/api'; 
 import { useNavigate } from 'react-router-dom';
 
 const Register: React.FC = () => {
@@ -25,16 +25,12 @@ const Register: React.FC = () => {
             try {
               const userData = await registerUser(values);
               console.log('Registration successful', userData);
-
-              // Set the success message
               setSuccessMessage('Registration successful');
-
-              // Navigate to the login page after successful registration
               navigate('/login');
             } catch (error) {
               console.error('Error during registration:', error);
               setErrors({ email: 'Registration failed' });
-              setSuccessMessage(''); // Clear success message on error
+              setSuccessMessage('');
             } finally {
               setSubmitting(false);
             }

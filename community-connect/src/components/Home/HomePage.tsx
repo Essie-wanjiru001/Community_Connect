@@ -1,24 +1,18 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaSearch, FaCouch, FaBroom, FaTools, FaDollarSign, FaExchangeAlt } from 'react-icons/fa';
-// import Calendar from 'react-calendar'; // Removed unused import
-import 'react-calendar/dist/Calendar.css';
+import { useAuth } from '../../contexts/AuthContext';
 
 const HomePage: React.FC = () => {
+  const { isAuthenticated, user } = useAuth();
   const [visibleCalendar, setVisibleCalendar] = useState<string | null>(null);
 
   const toggleCalendar = (artisan: string) => {
     setVisibleCalendar(visibleCalendar === artisan ? null : artisan);
   };
 
-  // Example usage of toggleCalendar function
-  <button onClick={() => toggleCalendar('exampleArtisan')} className="bg-blue-500 text-white px-6 py-3 rounded-md font-semibold hover:bg-blue-600 transition">
-    Toggle Calendar
-  </button>
-
   return (
     <div className="min-h-screen bg-gray-100">
-
       {/* Hero Section with Background Image and Overlay */}
       <section
         className="relative bg-cover bg-center h-screen text-white flex items-center"
@@ -49,14 +43,26 @@ const HomePage: React.FC = () => {
           </div>
 
           {/* Call to Action Button */}
-          <div className="mt-8">
-            <Link
-              to="/register"
-              className="bg-blue-500 text-white px-6 py-3 rounded-md font-semibold hover:bg-blue-600 transition"
-            >
-              Join Now
-            </Link>
-          </div>
+          {!isAuthenticated ? (
+            <div className="mt-8 flex justify-center space-x-6">
+              <Link
+                to="/register"
+                className="bg-blue-500 text-white px-6 py-3 rounded-md font-semibold hover:bg-blue-600 transition"
+              >
+                Join Now
+              </Link>
+              <Link
+                to="/login" 
+                className="bg-blue-500 text-white px-6 py-3 rounded-md font-semibold hover:bg-blue-600 transition"
+              >
+                Login
+              </Link>
+            </div>
+          ) : (
+            <div className="mt-8">
+              <p className="text-2xl font-semibold">Welcome back, {user?.name || 'User'}!</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -92,28 +98,21 @@ const HomePage: React.FC = () => {
         <div className="container mx-auto text-center px-4 md:px-8">
           <h2 className="text-4xl font-bold mb-10">Why Choose Us?</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            
-            {/* Feature 1 */}
             <div className="bg-white p-6 rounded-lg shadow-lg hover:shadow-2xl transition-shadow duration-300">
               <FaDollarSign className="text-blue-500 text-5xl mb-4" />
               <h3 className="text-2xl font-semibold mb-4">Easy Payments</h3>
               <p className="text-gray-600">Secure and flexible payment options.</p>
             </div>
-            
-            {/* Feature 2 */}
             <div className="bg-white p-6 rounded-lg shadow-lg hover:shadow-2xl transition-shadow duration-300">
               <FaExchangeAlt className="text-blue-500 text-5xl mb-4" />
               <h3 className="text-2xl font-semibold mb-4">Trusted Transactions</h3>
               <p className="text-gray-600">Fast and reliable transaction processing.</p>
             </div>
-            
-            {/* Feature 3 */}
             <div className="bg-white p-6 rounded-lg shadow-lg hover:shadow-2xl transition-shadow duration-300">
               <FaTools className="text-blue-500 text-5xl mb-4" />
               <h3 className="text-2xl font-semibold mb-4">Quality Services</h3>
               <p className="text-gray-600">High-quality local services you can trust.</p>
             </div>
-
           </div>
         </div>
       </section>
@@ -133,7 +132,7 @@ const HomePage: React.FC = () => {
               Furniture Assembly
             </button>
             <button className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-full hover:bg-gray-200 transition">
-              Home Applliances
+              Home Appliances
             </button>
             <button className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-full hover:bg-gray-200 transition">
               Help Moving

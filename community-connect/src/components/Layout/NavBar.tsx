@@ -1,21 +1,39 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext'; 
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { isAuthenticated, logout } = useAuth(); 
+  const navigate = useNavigate(); 
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
   };
 
+  const handleLogout = () => {
+    logout(); 
+    navigate('/'); 
+    setIsOpen(false); 
+  };
   const NavLinks = ({ className = '' }) => (
     <>
       <Link to="/" className={`${className} hover:text-gray-300`} onClick={() => setIsOpen(false)}>Home</Link>
-      <Link to="/profile/view" className={`${className} hover:text-gray-300`} onClick={() => setIsOpen(false)}>Profile</Link>
-      <Link to="/search" className={`${className} hover:text-gray-300`} onClick={() => setIsOpen(false)}>Search</Link>
-      <Link to="/booking/list" className={`${className} hover:text-gray-300`} onClick={() => setIsOpen(false)}>Bookings</Link>
-      <Link to="/chat" className={`${className} hover:text-gray-300`} onClick={() => setIsOpen(false)}>Chat</Link>
-      <Link to="/reviews/view" className={`${className} hover:text-gray-300`} onClick={() => setIsOpen(false)}>Reviews</Link>
+      {isAuthenticated ? (
+        <>
+          <Link to="/profile/view" className={`${className} hover:text-gray-300`} onClick={() => setIsOpen(false)}>Profile</Link>
+          <Link to="/search" className={`${className} hover:text-gray-300`} onClick={() => setIsOpen(false)}>Search</Link>
+          <Link to="/booking/list" className={`${className} hover:text-gray-300`} onClick={() => setIsOpen(false)}>Bookings</Link>
+          <Link to="/chat" className={`${className} hover:text-gray-300`} onClick={() => setIsOpen(false)}>Chat</Link>
+          <Link to="/reviews/view" className={`${className} hover:text-gray-300`} onClick={() => setIsOpen(false)}>Reviews</Link>
+          <button onClick={handleLogout} className={`${className} hover:text-gray-300`}>Logout</button>
+        </>
+      ) : (
+        <>
+          <Link to="/login" className={`${className} hover:text-gray-300`} onClick={() => setIsOpen(false)}>Login</Link>
+          <Link to="/register" className={`${className} hover:text-gray-300`} onClick={() => setIsOpen(false)}>Join Now</Link>
+        </>
+      )}
     </>
   );
 

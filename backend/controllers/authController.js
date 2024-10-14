@@ -4,7 +4,9 @@ const User = require('../models/User');
 
 // Register a new user
 exports.registerUser = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, userType } = req.body;
+
+  console.log('Request Body:', req.body); 
 
   try {
     // Check if the user already exists
@@ -17,10 +19,15 @@ exports.registerUser = async (req, res) => {
     user = new User({
       name,
       email,
-      password,  // This will be hashed before saving in the User model
+      password, // This will be hashed before saving in the User model
+      userType, //
     });
 
+    // Save the user
     await user.save();
+
+    console.log('User saved:', user); 
+
     res.status(201).json({ message: 'User registered successfully', user });
   } catch (err) {
     console.error('Error registering user:', err);
@@ -46,7 +53,7 @@ exports.loginUser = async (req, res) => {
     }
 
     // Generate a JWT token
-    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: user._id, email: user.email, userType: user.userType }, process.env.JWT_SECRET, {
       expiresIn: '1h',
     });
 
@@ -58,6 +65,7 @@ exports.loginUser = async (req, res) => {
         id: user._id,
         email: user.email,
         name: user.name,
+        userType: user.userType, 
       },
     });
   } catch (err) {

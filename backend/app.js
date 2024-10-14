@@ -3,8 +3,9 @@ const express = require('express');
 const connectDB = require('./config/db');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
-const passport = require('passport');  // Keeping this for other uses if needed
-const session = require('express-session');  // Keeping this for session-based purposes
+const userProfileRoutes = require('./routes/userProfile');
+const passport = require('passport');
+const session = require('express-session');
 
 const app = express();
 
@@ -13,7 +14,7 @@ connectDB().catch(err => console.error('Error connecting to MongoDB:', err));
 
 // Enable CORS for React Frontend
 const corsOptions = {
-  origin: 'http://localhost:3000',  // Adjust based on your frontend URL
+  origin: 'http://localhost:3000',
   methods: 'GET,POST,PUT,DELETE',
   credentials: true,
 };
@@ -24,7 +25,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session management (if you're using Passport for other purposes)
+// Session management 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'your-secret-key',
   resave: false,
@@ -36,7 +37,7 @@ app.use(session({
   }
 }));
 
-// Initialize Passport.js (if needed for other routes)
+// Initialize Passport.js 
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -47,6 +48,9 @@ app.get('/', (req, res) => {
 
 // Authentication routes for registration and login
 app.use('/api/auth', authRoutes);
+
+// User Profile routes (protected by authentication)
+app.use('/api/profile', userProfileRoutes); 
 
 // Start the server
 const PORT = process.env.PORT || 5000;
