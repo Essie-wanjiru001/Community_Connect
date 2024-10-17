@@ -1,15 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { FaSearch, FaCouch, FaBroom, FaTools, FaDollarSign, FaExchangeAlt } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 
 const HomePage: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
-  const [visibleCalendar, setVisibleCalendar] = useState<string | null>(null);
-
-  const toggleCalendar = (artisan: string) => {
-    setVisibleCalendar(visibleCalendar === artisan ? null : artisan);
-  };
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -30,7 +25,7 @@ const HomePage: React.FC = () => {
             Connecting local businesses, artisans, and service providers with your community.
           </p>
 
-          {/* Updated Search Bar */}
+          {/* Search Bar */}
           <div className="relative mx-auto max-w-xl mt-8">
             <input
               type="text"
@@ -42,8 +37,7 @@ const HomePage: React.FC = () => {
             </button>
           </div>
 
-
-          {/* Call to Action Button */}
+          {/* Call to Action Buttons or Welcome Message */}
           {!isAuthenticated ? (
             <div className="mt-8 flex justify-center space-x-6">
               <Link
@@ -62,6 +56,7 @@ const HomePage: React.FC = () => {
           ) : (
             <div className="mt-8">
               <p className="text-2xl font-semibold">Welcome back, {user?.name || 'User'}!</p>
+              <p className="text-xl mt-2">Explore services or check your dashboard for updates.</p>
             </div>
           )}
         </div>

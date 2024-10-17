@@ -11,7 +11,6 @@ const api = axios.create({
   }
 });
 
-// Intercept requests to add auth token
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -22,9 +21,21 @@ api.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
-// ==============================
-// Authentication APIs
-// ==============================
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      // Token has expired or is invalid
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+ //==================
+    //Authentication APIs
+    //==================
 
 // User login
 export const loginUser = async (loginData) => {
@@ -55,29 +66,54 @@ export const registerUser = async (registerData) => {
 // ==============================
 // User Profile APIs
 // ==============================
-
-// Fetch user profile
 export const fetchUserProfile = async () => {
   try {
     const response = await api.get('/profile');
     return response.data;
   } catch (error) {
-    console.error('Error fetching user profile', error.response || error);
+    console.error('Error fetching user profile:', error.response?.data || error.message);
+    console.error('Full error object:', error);
     throw error;
   }
 };
 
-// Update user profile
 export const updateUserProfile = async (profileData) => {
   try {
-    const response = await api.post('/profile', profileData);
+    console.log('Form data being sent:');
+    for (let key of profileData.keys()) {
+      console.log(key, profileData.get(key));
+    }
+
+    const response = await api.put('/profile', profileData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
     return response.data;
   } catch (error) {
-    console.error('Error updating user profile', error.response || error);
+    console.error('Error updating user profile:', error.response?.data || error.message);
+    console.error('Full error object:', error);
     throw error;
   }
 };
 
+export const deleteProfilePhoto = async () => {
+  try {
+    const response = await api.delete('/profile/photo');
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting profile photo:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const deleteServicePhoto = async (photoIndex) => {
+  try {
+    const response = await api.delete(`/profile/photos/${photoIndex}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting service photo:', error.response?.data || error.message);
+    throw error;
+  }
+};
 // ==============================
 // Booking APIs
 // ==============================
