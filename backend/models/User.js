@@ -22,6 +22,11 @@ const userSchema = new mongoose.Schema({
     enum: ['business', 'artisan', 'consumer'], // Restrict userType to specific values
     default: 'consumer', // Optional default value
   },
+  profile: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    refPath: 'userType' 
+  }
+
 });
 
 // Hash password before saving the user document

@@ -1,4 +1,4 @@
-import React, { useState, FormEvent } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -6,26 +6,28 @@ import { useAuth } from '../../contexts/AuthContext';
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null); // State to manage error messages
-  const [isLoading, setIsLoading] = useState(false); // State to manage loading state
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError(null); // Reset error state before login attempt
+    setError(null);
     try {
       const response = await loginUser({ email, password });
-      login(response.token);
+      console.log('Login API response:', response);
+      login(response.user, response.token);
       navigate('/');
     } catch (error) {
       setError('Login failed. Please check your credentials and try again.');
       console.error('Login failed:', error);
     } finally {
-      setIsLoading(false); // Stop loading after login attempt
+      setIsLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
