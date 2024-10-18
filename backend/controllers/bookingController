@@ -1,0 +1,145 @@
+const Booking = require('../models/Booking');
+const ArtisanProfile = require('../models/ArtisanProfile');
+const User = require('../models/User');
+
+exports.getAvailableSlots = async (req, res) => {
+  try {
+    const { artisanId } = req.params;
+    const { date } = req.query;
+
+    const artisan = await ArtisanProfile.findOne({ user: artisanId });
+    if (!artisan) {
+      return res.status(404).json({ message: 'Artisan not found' });
+    }
+
+    // Get the day of the week for the requested date
+    const dayOfWeek = new Date(date).toLocaleDateString('en-US', { weekday: 'long' });
+
+    // Filter availability for the requested day
+    const dayAvailability = artisan.availability.find(slot => slot.day === dayOfWeek);
+
+    if (!dayAvailability) {
+      return res.status(404).json({ message: 'No availability for the requested day' });
+    }
+
+    // Generate time slots based on the artisan's availability and slot duration
+    const slots = generateTimeSlots(dayAvailability.startTime, dayAvailability.endTime, artisan.calendarSettings.slotDuration);
+
+    // Filter out already booked slots
+    const bookedSlots = await Booking.find({
+      artisan: artisanId,
+      date: new Date(date),
+      status: { $in: ['pending', 'confirmed'] }
+    });
+
+    const availableSlots = slots.filter(slot => 
+      !bookedSlots.some(booking => 
+        booking.startTime === slot.startTime && booking.endTime === slot.endTime
+      )
+    );
+
+    res.json(availableSlots);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching available slots', error: error.message });
+  }
+};
+
+exports.createBooking = async (req, res) => {
+  try {
+    const { artisanId, date, startTime, endTime, service } = req.body;
+    const consumerId = req.user.id;
+
+    const artisan = await ArtisanProfile.findOne({ user: artisanId });
+    if (!artisan) {
+      return res.status(404).json({ message: 'Artisan not found' });
+    }
+
+    // Calculate total price based on service duration and artisan's charges
+    const durationHours = (new Date(`2000/01/01 ${endTime}`) - new Date(`2000/01/01 ${startTime}`)) / 3600000;
+    const totalPrice = durationHours * parseFloat(artisan.charges);
+
+    const newBooking = new Booking({
+      artisan: artisanId,
+      consumer: consumerId,
+      service,
+      date,
+      startTime,
+      endTime,
+      totalPrice,
+      status: 'pending'
+    });
+
+    await newBooking.save();
+
+    res.status(201).json({ message: 'Booking created successfully', booking: newBooking });
+  } catch (error) {
+    res.status(500).json({ message: 'Error creating booking', error: error.message });
+  }
+};
+
+exports.getUserBookings = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const bookings = await Booking.find({ consumer: userId })
+      .populate('artisan', 'name email')
+      .sort({ date: 1, startTime: 1 });
+
+    res.json(bookings);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching user bookings', error: error.message });
+  }
+};
+
+exports.getArtisanBookings = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const bookings = await Booking.find({ artisan: userId })
+      .populate('consumer', 'name email')
+      .sort({ date: 1, startTime: 1 });
+
+    res.json(bookings);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching artisan bookings', error: error.message });
+  }
+};
+
+exports.updateBookingStatus = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { status } = req.body;
+
+    const booking = await Booking.findByIdAndUpdate(
+      bookingId,
+      { status },
+      { new: true }
+    );
+
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    res.json({ message: 'Booking status updated successfully', booking });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating booking status', error: error.message });
+  }
+};
+
+// Helper function to generate time slots
+function generateTimeSlots(startTime, endTime, duration) {
+  const slots = [];
+  let currentTime = new Date(`2000/01/01 ${startTime}`);
+  const end = new Date(`2000/01/01 ${endTime}`);
+
+  while (currentTime < end) {
+    const slot = {
+      startTime: currentTime.toTimeString().slice(0, 5),
+      endTime: new Date(currentTime.getTime() + duration * 60000).toTimeString().slice(0, 5)
+    };
+    slots.push(slot);
+    currentTime = new Date(currentTime.getTime() + duration * 60000);
+  }
+
+  return slots;
+}
+
+module.exports = exports;

@@ -43,7 +43,7 @@ const App: React.FC = () => {
                 } } />
               </ProtectedRoute>
             } />
-            <Route path="/booking/new" element={
+            <Route path="/booking/new/:artisanId" element={
               <ProtectedRoute>
                 <BookingForm />
               </ProtectedRoute>

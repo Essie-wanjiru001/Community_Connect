@@ -2,9 +2,14 @@ import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { RootState, AppDispatch } from '../redux/store';
-import { fetchProfileAsync, selectUser, selectProfile, selectProfileLoading, selectProfileError } from '../redux/slices/profileSlice';
+import { fetchProfileAsync } from '../redux/slices/profileSlice';
 
-
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  userType: 'consumer' | 'artisan' | 'business';
+}
 
 interface BaseProfile {
   telephone: string;
@@ -19,8 +24,13 @@ interface ConsumerProfile extends BaseProfile {
 interface ArtisanProfile extends BaseProfile {
   serviceType: string;
   charges: string;
-  availability: string;
+  availability: { day: string; startTime: string; endTime: string }[];
   servicePhotos?: string[];
+  calendarSettings: {
+    bookingNotice: number;
+    maxAdvanceBooking: number;
+    slotDuration: number;
+  };
 }
 
 interface BusinessProfile extends BaseProfile {
@@ -32,24 +42,12 @@ interface BusinessProfile extends BaseProfile {
 
 type Profile = ConsumerProfile | ArtisanProfile | BusinessProfile;
 
-const isConsumerProfile = (profile: Profile): profile is ConsumerProfile => {
-  return 'bio' in profile;
-};
-
-const isArtisanProfile = (profile: Profile): profile is ArtisanProfile => {
-  return 'serviceType' in profile;
-};
-
-const isBusinessProfile = (profile: Profile): profile is BusinessProfile => {
-  return 'businessCategory' in profile;
-};
-
 const ProfileView: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const user = useSelector(selectUser);
-  const profile = useSelector(selectProfile);
-  const loading = useSelector(selectProfileLoading);
-  const error = useSelector(selectProfileError);
+  const user = useSelector((state: RootState) => state.auth.user as User | null);
+  const profile = useSelector((state: RootState) => state.profile.profile as Profile | null);
+  const loading = useSelector((state: RootState) => state.profile.loading);
+  const error = useSelector((state: RootState) => state.profile.error);
 
   useEffect(() => {
     dispatch(fetchProfileAsync());
@@ -74,10 +72,59 @@ const ProfileView: React.FC = () => {
     return <div className="text-center mt-10">No profile data available.</div>;
   }
 
+  const isConsumerProfile = (profile: Profile): profile is ConsumerProfile => {
+    return 'bio' in profile;
+  };
+
+  const isArtisanProfile = (profile: Profile): profile is ArtisanProfile => {
+    return 'serviceType' in profile;
+  };
+
+  const isBusinessProfile = (profile: Profile): profile is BusinessProfile => {
+    return 'businessCategory' in profile;
+  };
+
   const renderProfileField = (label: string, value: string | undefined) => (
     <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
       <dt className="text-sm font-medium text-gray-500">{label}</dt>
       <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{value || 'Not provided'}</dd>
+    </div>
+  );
+
+  const renderAvailability = (availability: { day: string; startTime: string; endTime: string }[]) => (
+    <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+      <dt className="text-sm font-medium text-gray-500">Availability</dt>
+      <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+        {availability.map((slot, index) => (
+          <div key={index}>
+            {slot.day}: {slot.startTime} - {slot.endTime}
+          </div>
+        ))}
+      </dd>
+    </div>
+  );
+
+  const renderCalendarSettings = (settings: { bookingNotice: number; maxAdvanceBooking: number; slotDuration: number }) => (
+    <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+      <dt className="text-sm font-medium text-gray-500">Calendar Settings</dt>
+      <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+        <div>Booking Notice: {settings.bookingNotice} hours</div>
+        <div>Max Advance Booking: {settings.maxAdvanceBooking} days</div>
+        <div>Slot Duration: {settings.slotDuration} minutes</div>
+      </dd>
+    </div>
+  );
+
+  const renderServicePhotos = (photos: string[]) => (
+    <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+      <dt className="text-sm font-medium text-gray-500">Service/Product Photos</dt>
+      <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+        <div className="flex flex-wrap gap-2">
+          {photos.map((photo: string, index: number) => (
+            <img key={index} src={photo} alt={`Service ${index + 1}`} className="w-24 h-24 object-cover rounded" />
+          ))}
+        </div>
+      </dd>
     </div>
   );
 
@@ -100,7 +147,8 @@ const ProfileView: React.FC = () => {
             <>
               {renderProfileField("Service Type", profile.serviceType)}
               {renderProfileField("Charges", profile.charges)}
-              {renderProfileField("Availability", profile.availability)}
+              {renderAvailability(profile.availability)}
+              {renderCalendarSettings(profile.calendarSettings)}
             </>
           )}
           
@@ -121,18 +169,10 @@ const ProfileView: React.FC = () => {
             </div>
           )}
           
-          {(isArtisanProfile(profile) || isBusinessProfile(profile)) && profile.servicePhotos && profile.servicePhotos.length > 0 && (
-            <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500">Service/Product Photos</dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                <div className="flex flex-wrap gap-2">
-                  {profile.servicePhotos.map((photo: string, index: number) => (
-                    <img key={index} src={photo} alt={`Service ${index + 1}`} className="w-24 h-24 object-cover rounded" />
-                  ))}
-                </div>
-              </dd>
-            </div>
-          )}
+          {(isArtisanProfile(profile) || isBusinessProfile(profile)) && 
+           profile.servicePhotos && 
+           profile.servicePhotos.length > 0 && 
+           renderServicePhotos(profile.servicePhotos)}
         </dl>
       </div>
       <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">

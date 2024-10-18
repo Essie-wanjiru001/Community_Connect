@@ -66,6 +66,7 @@ export const registerUser = async (registerData) => {
 // ==============================
 // User Profile APIs
 // ==============================
+// Get user profile
 export const fetchUserProfile = async () => {
   try {
     const response = await api.get('/profile');
@@ -77,6 +78,7 @@ export const fetchUserProfile = async () => {
   }
 };
 
+//Update user profile
 export const updateUserProfile = async (profileData) => {
   try {
     console.log('Form data being sent:');
@@ -114,6 +116,19 @@ export const deleteServicePhoto = async (photoIndex) => {
     throw error;
   }
 };
+
+//export artisans profile
+export const fetchArtisanProfiles = async () => {
+  try {
+    const response = await api.get('/profile/artisans');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching artisan profiles:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+
 // ==============================
 // Booking APIs
 // ==============================
@@ -129,38 +144,65 @@ export const fetchBookings = async () => {
   }
 };
 
-// Create a new booking
-export const createBooking = async (bookingData) => {
+export const fetchAvailableTimeSlots = async (artisanId, date) => {
   try {
-    const response = await api.post('/bookings', bookingData);
+    const response = await api.get(`/bookings/available-slots/${artisanId}`, {
+      params: { date }
+    });
     return response.data;
   } catch (error) {
-    console.error('Error creating booking', error.response || error);
+    console.error('Error fetching available time slots:', error.response?.data || error.message);
     throw error;
   }
 };
 
-// Update an existing booking
-export const updateBooking = async (bookingId, bookingData) => {
+export const createNewBooking = async (artisanId, date, slot) => {
   try {
-    const response = await api.put(`/bookings/${bookingId}`, bookingData);
+    const response = await api.post('/bookings/create', {
+      artisanId,
+      date,
+      slot
+    });
     return response.data;
   } catch (error) {
-    console.error('Error updating booking', error.response || error);
+    console.error('Error creating new booking:', error.response?.data || error.message);
     throw error;
   }
 };
 
-// Delete a booking
-export const deleteBooking = async (bookingId) => {
+// Function to fetch user's bookings
+export const fetchUserBookings = async () => {
   try {
-    const response = await api.delete(`/bookings/${bookingId}`);
+    const response = await api.get('/bookings/user');
     return response.data;
   } catch (error) {
-    console.error('Error deleting booking', error.response || error);
+    console.error('Error fetching user bookings:', error.response?.data || error.message);
     throw error;
   }
 };
+
+// Function for artisans to fetch their received bookings
+export const fetchArtisanBookings = async () => {
+  try {
+    const response = await api.get('/bookings/artisan');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching artisan bookings:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+// Function to update booking status (e.g., confirm or cancel)
+export const updateBookingStatus = async (bookingId, status) => {
+  try {
+    const response = await api.put(`/bookings/${bookingId}/status`, { status });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating booking status:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
 
 // ==============================
 // Review APIs

@@ -1,10 +1,43 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { FaSearch, FaCouch, FaBroom, FaTools, FaDollarSign, FaExchangeAlt } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
+import { fetchArtisanProfiles } from '../../services/api';
+
+interface ArtisanProfile {
+  _id: string;
+  user: {
+    _id: string;
+    name: string;
+  };
+  serviceType: string;
+  charges: string;
+  servicePhotos: string[];
+}
 
 const HomePage: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
+  const [artisanProfiles, setArtisanProfiles] = useState<ArtisanProfile[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const loadArtisanProfiles = async () => {
+      try {
+        setLoading(true);
+        const profiles = await fetchArtisanProfiles();
+        setArtisanProfiles(profiles);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error loading artisan profiles:', error);
+        setError('Failed to load services. Please try again later.');
+        setLoading(false);
+      }
+    };
+
+    loadArtisanProfiles();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -164,45 +197,48 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* Popular Services Section with Images */}
+      {/* Services and Bookings */}
       <section className="py-16">
         <div className="container mx-auto text-center px-4 md:px-8">
           <h2 className="text-4xl font-bold mb-10">Popular Services</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="relative group">
-              <img src="https://images.pexels.com/photos/17912719/pexels-photo-17912719/free-photo-of-people-moving-to-a-house.jpeg" alt="Service" className="rounded-lg shadow-lg" />
-              <div className="absolute inset-0 bg-black opacity-50 group-hover:opacity-75 transition duration-300 rounded-lg"></div>
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-                <h3 className="text-2xl font-semibold">Furniture Assembly</h3>
-                <p className="mt-2">Starting at $50</p>
-                <Link to="/services/assembly" className="mt-4 bg-blue-500 px-4 py-2 rounded-md text-white hover:bg-blue-600 transition">
-                  Book Now
-                </Link>
-              </div>
+          {loading ? (
+            <p className="text-xl">Loading services...</p>
+          ) : error ? (
+            <div>
+              <p className="text-xl text-red-500">{error}</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition"
+              >
+                Try Again
+              </button>
             </div>
-            <div className="relative group">
-              <img src="https://images.pexels.com/photos/17912719/pexels-photo-17912719/free-photo-of-people-moving-to-a-house.jpeg" alt="Service" className="rounded-lg shadow-lg" />
-              <div className="absolute inset-0 bg-black opacity-50 group-hover:opacity-75 transition duration-300 rounded-lg"></div>
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-                <h3 className="text-2xl font-semibold">Mount a TV</h3>
-                <p className="mt-2">Starting at $60</p>
-                <Link to="/services/tv-mounting" className="mt-4 bg-blue-500 px-4 py-2 rounded-md text-white hover:bg-blue-600 transition">
-                  Book Now
-                </Link>
-              </div>
+          ) : artisanProfiles.length === 0 ? (
+            <p className="text-xl">No services available at the moment. Please check back later.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {artisanProfiles.map((profile: ArtisanProfile) => (
+                <div key={profile._id} className="relative group">
+                  <img 
+                    src={profile.servicePhotos[0] || 'https://via.placeholder.com/300'}
+                    alt={profile.serviceType} 
+                    className="rounded-lg shadow-lg w-full h-64 object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black opacity-50 group-hover:opacity-75 transition duration-300 rounded-lg"></div>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+                    <h3 className="text-2xl font-semibold">{profile.serviceType}</h3>
+                    <p className="mt-2">Starting at ${profile.charges}</p>
+                    <Link 
+                      to={`/booking/new/${profile.user._id}`} 
+                      className="mt-4 bg-blue-500 px-4 py-2 rounded-md text-white hover:bg-blue-600 transition"
+                    >
+                      Book Now
+                    </Link>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="relative group">
-              <img src="https://images.pexels.com/photos/17912719/pexels-photo-17912719/free-photo-of-people-moving-to-a-house.jpeg" alt="Service" className="rounded-lg shadow-lg" />
-              <div className="absolute inset-0 bg-black opacity-50 group-hover:opacity-75 transition duration-300 rounded-lg"></div>
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-                <h3 className="text-2xl font-semibold">Help Moving</h3>
-                <p className="mt-2">Starting at $80</p>
-                <Link to="/services/moving" className="mt-4 bg-blue-500 px-4 py-2 rounded-md text-white hover:bg-blue-600 transition">
-                  Book Now
-                </Link>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </section>
 

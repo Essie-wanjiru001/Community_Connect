@@ -55,10 +55,14 @@ export const fetchProfileAsync = createAsyncThunk(
       const data = await fetchUserProfile();
       return data;
     } catch (error: any) {
+      if (error.response && error.response.status === 404 && error.response.data.message === 'No Profile Details Found') {
+        return rejectWithValue('No Profile Details Found');
+      }
       return rejectWithValue(error.response?.data?.message || error.message || 'An unknown error occurred');
     }
   }
 );
+
 
 export const updateProfileAsync = createAsyncThunk(
   'profile/updateProfile',
@@ -101,7 +105,11 @@ const profileSlice = createSlice({
       .addCase(fetchProfileAsync.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+        if (action.payload === 'No Profile Details Found') {
+          state.profile = null;
+        }
       })
+      
       .addCase(updateProfileAsync.pending, (state) => {
         state.loading = true;
         state.error = null;

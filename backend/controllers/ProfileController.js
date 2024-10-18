@@ -50,16 +50,14 @@ exports.getProfile = async (req, res) => {
     console.log('Profile found:', profile);
 
     if (!profile) {
-      console.log('Profile not found, creating a new one');
-      profile = new ProfileModel({ user: user._id });
-      await profile.save();
-      console.log('New profile created:', profile);
+      console.log('Profile not found for user:', req.user.id);
+      return res.status(404).json({ message: 'No Profile Details Found' });
     }
 
     res.json({ user: user.toObject({ getters: true }), profile });
   } catch (error) {
     console.error('Error in getProfile:', error);
-    res.status(500).json({ message: 'Server error', error: error.toString(), stack: error.stack });
+    res.status(500).json({ message: 'Server error', error: error.toString() });
   }
 };
 
@@ -98,6 +96,16 @@ exports.updateProfile = [
       }
 
       const profileData = { ...req.body };
+
+      // Handle availability separately for artisans
+      if (user.userType === 'artisan' && profileData.availability) {
+        profileData.availability = JSON.parse(profileData.availability);
+      }
+
+      // Handle calendar settings for artisans
+      if (user.userType === 'artisan' && profileData.calendarSettings) {
+        profileData.calendarSettings = JSON.parse(profileData.calendarSettings);
+      }
 
       if (req.files && req.files.profilePhoto) {
         console.log('Profile photo uploaded:', req.files.profilePhoto[0].path);
@@ -235,9 +243,80 @@ exports.deleteServicePhoto = async (req, res) => {
   }
 };
 
+
+
+// New function to get available time slots
+exports.getAvailableTimeSlots = async (req, res) => {
+  try {
+    const { artisanId, date } = req.query;
+    const artisan = await ArtisanProfile.findOne({ user: artisanId });
+    if (!artisan) {
+      return res.status(404).json({ message: 'Artisan not found' });
+    }
+
+    const requestedDate = new Date(date);
+    const dayOfWeek = requestedDate.toLocaleString('en-us', {weekday: 'long'});
+    const availableSlots = artisan.availability.filter(slot => slot.day === dayOfWeek);
+
+    // Apply calendar settings
+    const { bookingNotice, maxAdvanceBooking, slotDuration } = artisan.calendarSettings;
+
+    const now = new Date();
+    const minBookingTime = new Date(now.getTime() + bookingNotice * 60 * 60 * 1000);
+    const maxBookingTime = new Date(now.getTime() + maxAdvanceBooking * 24 * 60 * 60 * 1000);
+
+    if (requestedDate < minBookingTime || requestedDate > maxBookingTime) {
+      return res.status(400).json({ message: 'Requested date is outside of allowed booking range' });
+    }
+
+    // Generate time slots based on availability and slot duration
+    const generatedSlots = availableSlots.flatMap(slot => {
+      const slots = [];
+      let currentTime = new Date(`${date}T${slot.startTime}`);
+      const endTime = new Date(`${date}T${slot.endTime}`);
+
+      while (currentTime < endTime) {
+        const slotEndTime = new Date(currentTime.getTime() + slotDuration * 60 * 1000);
+        if (slotEndTime <= endTime) {
+          slots.push({
+            startTime: currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            endTime: slotEndTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          });
+        }
+        currentTime = slotEndTime;
+      }
+
+      return slots;
+    });
+
+    // Here you would also check against existing bookings
+    // This is a simplified version and doesn't account for existing bookings
+
+    res.json(generatedSlots);
+  } catch (error) {
+    console.error('Error getting available time slots:', error);
+    res.status(500).json({ message: 'Server error', error: error.toString() });
+  }
+};
+
+exports.getArtisanProfiles = async (req, res) => {
+  try {
+    const artisanProfiles = await ArtisanProfile.find()
+      .populate('user', 'name')
+      .select('serviceType charges profilePhoto servicePhotos user');
+    res.json(artisanProfiles);
+  } catch (error) {
+    console.error('Error fetching artisan profiles:', error);
+    res.status(500).json({ message: 'Server error', error: error.toString() });
+  }
+};
+
+
 module.exports = {
+  getArtisanProfiles: exports.getArtisanProfiles,
   getProfile: exports.getProfile,
   updateProfile: exports.updateProfile,
   deleteProfilePhoto: exports.deleteProfilePhoto,
-  deleteServicePhoto: exports.deleteServicePhoto
+  deleteServicePhoto: exports.deleteServicePhoto,
+  getAvailableTimeSlots: exports.getAvailableTimeSlots
 };

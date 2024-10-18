@@ -4,6 +4,7 @@ const connectDB = require('./config/db');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profileRoutes');
+const bookingRoutes = require('./routes/bookingRoutes')
 const passport = require('passport');
 const session = require('express-session');
 
@@ -49,7 +50,12 @@ app.get('/', (req, res) => {
 
 // Authentication routes for registration and login
 app.use('/api/auth', authRoutes);
+
+// Profile routes
 app.use('/api/profile', profileRoutes);
+
+// Use the booking routes
+app.use('/api/bookings', bookingRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 5000;
