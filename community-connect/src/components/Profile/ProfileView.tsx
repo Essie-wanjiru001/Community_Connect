@@ -2,14 +2,9 @@ import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { RootState, AppDispatch } from '../redux/store';
-import { fetchProfileAsync } from '../redux/slices/profileSlice';
+import { fetchProfileAsync, selectUser, selectProfile, selectProfileLoading, selectProfileError } from '../redux/slices/profileSlice';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  userType: 'consumer' | 'artisan' | 'business';
-}
+
 
 interface BaseProfile {
   telephone: string;

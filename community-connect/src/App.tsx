@@ -1,8 +1,9 @@
+// src/App.tsx
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { Provider } from 'react-redux';
-import {store} from './components/redux/store';
-import { AuthProvider } from './contexts/AuthContext';
+import { store } from './components/redux/store';
+import { AuthProvider } from './contexts/AuthContext'; // Import the Auth context
 import ProtectedRoute from './components/routes/ProtectedRoute';
 import ProfileView from './components/Profile/ProfileView';
 import ProfileForm from './components/Profile/ProfileForm';
@@ -18,6 +19,7 @@ import HomePage from './components/Home/HomePage';
 import Navbar from './components/Layout/NavBar';
 
 const App: React.FC = () => {
+
   return (
     <Provider store={store}>
       <AuthProvider>
@@ -43,7 +45,7 @@ const App: React.FC = () => {
                 } } />
               </ProtectedRoute>
             } />
-            <Route path="/booking/new/:artisanId" element={
+            <Route path="/booking/new" element={
               <ProtectedRoute>
                 <BookingForm />
               </ProtectedRoute>
