@@ -1,18 +1,17 @@
+/** @type {import('tailwindcss').Config} */
 module.exports = {
-  // use content instead of purge if using tailiwind v3
-  purge: [
+  content: [
     "./src/**/*.{js,jsx,ts,tsx}",
     "./public/index.html",
-
-    // this line fixed the issue for me
+    // Include any component libraries if necessary
     "./node_modules/{component-library-name}/src/**/*.{js,jsx,ts,tsx}"
   ],
   darkMode: false, // or 'media' or 'class'
   theme: {
-    extend: {}
+    extend: {},
   },
   variants: {
-    extend: {}
+    extend: {},
   },
-  plugins: []
+  plugins: [],
 };

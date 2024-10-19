@@ -1,39 +1,33 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-module.exports = async function(req, res, next) {
-  console.log('Auth middleware called');
-  console.log('Headers:', req.headers);
-
-  const authHeader = req.header('Authorization');
-  if (!authHeader) {
-    console.log('No Authorization header');
-    return res.status(401).json({ message: 'No token, authorization denied' });
-  }
-
-  const token = authHeader.split(' ')[1]; // Bearer TOKEN
-  if (!token) {
-    console.log('No token in Authorization header');
-    return res.status(401).json({ message: 'No token, authorization denied' });
-  }
-
+// Middleware to protect routes
+module.exports = async function (req, res, next) {
   try {
-    console.log('Verifying token');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('Decoded token:', decoded);
+    const authHeader = req.header('Authorization');
+    if (!authHeader) {
+      return res.status(401).json({ message: 'Authorization header missing' });
+    }
 
+    const token = authHeader.split(' ')[1]; // Extract the token
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+
+    // Verify the token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Find the user from the decoded token
     const user = await User.findById(decoded.userId);
-    
     if (!user) {
-      console.log('User not found for token');
       return res.status(404).json({ message: 'User not found' });
     }
 
-    console.log('User found:', user._id);
+    // Attach the user to the request object
     req.user = user;
-    next();
+    next(); // Proceed to the next middleware or route handler
   } catch (err) {
-    console.error('Token verification error:', err);
-    res.status(401).json({ message: 'Token is not valid' });
+    console.error('Authorization error:', err);
+    res.status(401).json({ message: 'Invalid token or unauthorized' });
   }
 };

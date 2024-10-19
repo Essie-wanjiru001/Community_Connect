@@ -5,11 +5,13 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { LatLngExpression } from 'leaflet';
 
-interface Business {
-  id: number;
+interface SearchResult {
+  id: string;
   name: string;
-  position: LatLngExpression;
-  description: string;
+  serviceType: string;
+  location: string;
+  availability: string;
+  coordinates: { lat: number; lng: number };
 }
 
 const ChangeMapView: React.FC<{ center: LatLngExpression }> = ({ center }) => {
@@ -20,38 +22,44 @@ const ChangeMapView: React.FC<{ center: LatLngExpression }> = ({ center }) => {
   return null;
 };
 
-const MapSearch: React.FC<{ searchResults: Business[] }> = ({ searchResults }) => {
+const MapSearch: React.FC<{ searchResults: SearchResult[] }> = ({ searchResults }) => {
   const defaultCenter: LatLngExpression = [51.505, -0.09]; // Default center
   const zoomLevel = 13;
-  
+
   const [userLocation, setUserLocation] = useState<LatLngExpression | null>(null);
 
-  // Get user's current location
+  // Get user's current location with fallback on error
   useEffect(() => {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((position) => {
-        const { latitude, longitude } = position.coords;
-        setUserLocation([latitude, longitude]);
-      });
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setUserLocation([latitude, longitude]);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+        }
+      );
     }
   }, []);
 
-  const center = userLocation || (searchResults.length ? searchResults[0].position : defaultCenter);
+  const center = userLocation || (searchResults.length ? searchResults[0].coordinates : defaultCenter);
 
   return (
-    <MapContainer center={center} zoom={zoomLevel} style={{ height: '500px', width: '100%' }}>
+    <MapContainer center={center} zoom={zoomLevel} style={{ height: '70vh', width: '100%' }}>
       <ChangeMapView center={center} />
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
 
-      {/* Add markers dynamically based on search results */}
-      {searchResults.map((business) => (
-        <Marker key={business.id} position={business.position}>
+      {/* Render dynamic markers based on search results */}
+      {searchResults.map((result) => (
+        <Marker key={result.id} position={[result.coordinates.lat, result.coordinates.lng]}>
           <Popup>
-            <strong>{business.name}</strong><br />
-            {business.description}
+            <strong>{result.name}</strong><br />
+            {result.serviceType} in {result.location}<br />
+            Available on: {result.availability}
           </Popup>
         </Marker>
       ))}
