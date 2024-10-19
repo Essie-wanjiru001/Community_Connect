@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const availabilitySlotSchema = new mongoose.Schema({
-  day: { type: String, enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], required: true },
+  date: { type: Date, required: true },
   startTime: { type: String, required: true },
   endTime: { type: String, required: true },
 });
@@ -16,7 +16,7 @@ const artisanProfileSchema = new mongoose.Schema({
   profilePhoto: { type: String },
   servicePhotos: [{ type: String }],
   calendarSettings: {
-    bookingNotice: { type: Number, default: 24 }, // Hours of notice required for booking
+    advanceBookings: { type: Number, default: 30 }, // Days in advance a booking can be made
   },
 });
 

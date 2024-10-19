@@ -6,6 +6,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
+
 // Configure multer for file upload
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -69,13 +70,8 @@ exports.updateProfile = [
   ]),
   async (req, res) => {
     try {
-      console.log('updateProfile called for user:', req.user.id);
-      console.log('Request body:', req.body);
-      console.log('Files:', req.files);
-
       const user = await User.findById(req.user.id);
       if (!user) {
-        console.log('User not found:', req.user.id);
         return res.status(404).json({ message: 'User not found' });
       }
 
@@ -91,7 +87,6 @@ exports.updateProfile = [
           ProfileModel = BusinessProfile;
           break;
         default:
-          console.log('Invalid user type:', user.userType);
           return res.status(400).json({ message: 'Invalid user type' });
       }
 
@@ -108,16 +103,12 @@ exports.updateProfile = [
       }
 
       if (req.files && req.files.profilePhoto) {
-        console.log('Profile photo uploaded:', req.files.profilePhoto[0].path);
         profileData.profilePhoto = req.files.profilePhoto[0].path;
       }
 
       if (req.files && req.files.servicePhotos) {
-        console.log('Service photos uploaded:', req.files.servicePhotos.map(file => file.path));
         profileData.servicePhotos = req.files.servicePhotos.map(file => file.path);
       }
-
-      console.log('Profile data to be saved:', profileData);
 
       let profile = await ProfileModel.findOneAndUpdate(
         { user: user._id },
@@ -125,19 +116,14 @@ exports.updateProfile = [
         { new: true, upsert: true, runValidators: true }
       );
 
-      console.log('Updated profile:', profile);
-
-      // Update user name and email if provided
       if (profileData.name) user.name = profileData.name;
       if (profileData.email) user.email = profileData.email;
       await user.save();
 
-      console.log('Updated user:', user);
-
       res.json({ message: 'Profile updated successfully', user: user.toObject({ getters: true }), profile });
     } catch (error) {
       console.error('Error in updateProfile:', error);
-      res.status(500).json({ message: 'Server error', error: error.toString(), stack: error.stack });
+      res.status(500).json({ message: 'Server error', error: error.toString() });
     }
   }
 ];
@@ -255,49 +241,31 @@ exports.getAvailableTimeSlots = async (req, res) => {
     }
 
     const requestedDate = new Date(date);
-    const dayOfWeek = requestedDate.toLocaleString('en-us', {weekday: 'long'});
-    const availableSlots = artisan.availability.filter(slot => slot.day === dayOfWeek);
+    const availableSlots = artisan.availability.filter(slot => 
+      slot.date.toDateString() === requestedDate.toDateString()
+    );
+
 
     // Apply calendar settings
-    const { bookingNotice, maxAdvanceBooking, slotDuration } = artisan.calendarSettings;
+    const { advanceBookings } = artisan.calendarSettings;
 
     const now = new Date();
-    const minBookingTime = new Date(now.getTime() + bookingNotice * 60 * 60 * 1000);
-    const maxBookingTime = new Date(now.getTime() + maxAdvanceBooking * 24 * 60 * 60 * 1000);
+    const maxBookingDate = new Date(now.getTime() + advanceBookings * 24 * 60 * 60 * 1000);
 
-    if (requestedDate < minBookingTime || requestedDate > maxBookingTime) {
+    if (requestedDate > maxBookingDate) {
       return res.status(400).json({ message: 'Requested date is outside of allowed booking range' });
     }
-
-    // Generate time slots based on availability and slot duration
-    const generatedSlots = availableSlots.flatMap(slot => {
-      const slots = [];
-      let currentTime = new Date(`${date}T${slot.startTime}`);
-      const endTime = new Date(`${date}T${slot.endTime}`);
-
-      while (currentTime < endTime) {
-        const slotEndTime = new Date(currentTime.getTime() + slotDuration * 60 * 1000);
-        if (slotEndTime <= endTime) {
-          slots.push({
-            startTime: currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            endTime: slotEndTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          });
-        }
-        currentTime = slotEndTime;
-      }
-
-      return slots;
-    });
 
     // Here you would also check against existing bookings
     // This is a simplified version and doesn't account for existing bookings
 
-    res.json(generatedSlots);
+    res.json(availableSlots);
   } catch (error) {
     console.error('Error getting available time slots:', error);
     res.status(500).json({ message: 'Server error', error: error.toString() });
   }
 };
+
 
 exports.getArtisanProfiles = async (req, res) => {
   try {

@@ -11,6 +11,7 @@ const api = axios.create({
   }
 });
 
+// Add request interceptor to include token in headers
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -21,18 +22,22 @@ api.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
+// Add response interceptor to handle errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-      // Token has expired or is invalid
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+    if (error.response) {
+      console.error("Error data:", error.response.data);
+      console.error("Error status:", error.response.status);
+      console.error("Error headers:", error.response.headers);
+    } else if (error.request) {
+      console.error("Error request:", error.request);
+    } else {
+      console.error('Error message:', error.message);
     }
     return Promise.reject(error);
   }
 );
-
  //==================
     //Authentication APIs
     //==================
@@ -73,7 +78,6 @@ export const fetchUserProfile = async () => {
     return response.data;
   } catch (error) {
     console.error('Error fetching user profile:', error.response?.data || error.message);
-    console.error('Full error object:', error);
     throw error;
   }
 };
@@ -81,21 +85,16 @@ export const fetchUserProfile = async () => {
 //Update user profile
 export const updateUserProfile = async (profileData) => {
   try {
-    console.log('Form data being sent:');
-    for (let key of profileData.keys()) {
-      console.log(key, profileData.get(key));
-    }
-
     const response = await api.put('/profile', profileData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     return response.data;
   } catch (error) {
     console.error('Error updating user profile:', error.response?.data || error.message);
-    console.error('Full error object:', error);
     throw error;
   }
 };
+
 
 export const deleteProfilePhoto = async () => {
   try {
@@ -121,10 +120,16 @@ export const deleteServicePhoto = async (photoIndex) => {
 export const fetchArtisanProfiles = async () => {
   try {
     const response = await api.get('/profile/artisans');
-    return response.data;
+    console.log('API response:', response);
+    return response;
   } catch (error) {
     console.error('Error fetching artisan profiles:', error.response?.data || error.message);
-    throw error;
+    // Instead of throwing, return an object with error information
+    return {
+      status: error.response?.status || 500,
+      data: null,
+      error: error.response?.data?.message || error.message || 'An unknown error occurred'
+    };
   }
 };
 
@@ -134,16 +139,6 @@ export const fetchArtisanProfiles = async () => {
 // ==============================
 
 // Fetch all bookings
-export const fetchBookings = async () => {
-  try {
-    const response = await api.get('/bookings');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching bookings', error.response || error);
-    throw error;
-  }
-};
-
 export const fetchAvailableTimeSlots = async (artisanId, date) => {
   try {
     const response = await api.get(`/bookings/available-slots/${artisanId}`, {
@@ -151,58 +146,55 @@ export const fetchAvailableTimeSlots = async (artisanId, date) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching available time slots:', error.response?.data || error.message);
+    console.error('Error fetching available time slots:', error);
     throw error;
   }
 };
 
-export const createNewBooking = async (artisanId, date, slot) => {
+export const createNewBooking = async (artisanId, date, slot, service) => {
   try {
     const response = await api.post('/bookings/create', {
       artisanId,
       date,
-      slot
+      slot,
+      service
     });
     return response.data;
   } catch (error) {
-    console.error('Error creating new booking:', error.response?.data || error.message);
+    console.error('Error creating new booking:', error);
     throw error;
   }
 };
 
-// Function to fetch user's bookings
 export const fetchUserBookings = async () => {
   try {
     const response = await api.get('/bookings/user');
     return response.data;
   } catch (error) {
-    console.error('Error fetching user bookings:', error.response?.data || error.message);
+    console.error('Error fetching user bookings:', error);
     throw error;
   }
 };
 
-// Function for artisans to fetch their received bookings
 export const fetchArtisanBookings = async () => {
   try {
     const response = await api.get('/bookings/artisan');
     return response.data;
   } catch (error) {
-    console.error('Error fetching artisan bookings:', error.response?.data || error.message);
+    console.error('Error fetching artisan bookings:', error);
     throw error;
   }
 };
 
-// Function to update booking status (e.g., confirm or cancel)
 export const updateBookingStatus = async (bookingId, status) => {
   try {
     const response = await api.put(`/bookings/${bookingId}/status`, { status });
     return response.data;
   } catch (error) {
-    console.error('Error updating booking status:', error.response?.data || error.message);
+    console.error('Error updating booking status:', error);
     throw error;
   }
 };
-
 
 // ==============================
 // Review APIs

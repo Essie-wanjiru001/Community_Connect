@@ -4,10 +4,9 @@ const connectDB = require('./config/db');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profileRoutes');
-const bookingRoutes = require('./routes/bookingRoutes')
+const bookingRoutes = require('./routes/bookingRoutes');
 const passport = require('passport');
 const session = require('express-session');
-
 
 const app = express();
 
@@ -16,9 +15,10 @@ connectDB().catch(err => console.error('Error connecting to MongoDB:', err));
 
 // Enable CORS for React Frontend
 const corsOptions = {
-  origin: 'http://localhost:3000',
-  methods: 'GET,POST,PUT,DELETE',
+  origin: 'http://localhost:3000', // Update this to match your frontend URL
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
+  optionsSuccessStatus: 204
 };
 
 app.use(cors(corsOptions));
@@ -43,22 +43,34 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/bookings', bookingRoutes);
+
 // Basic route for testing the server
 app.get('/', (req, res) => {
-  res.send('Hello, welcome to the Community Connect API!');
+  res.json({ message: 'Welcome to the Community Connect API!' });
 });
 
-// Authentication routes for registration and login
-app.use('/api/auth', authRoutes);
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ 
+    message: 'An unexpected error occurred', 
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error' 
+  });
+});
 
-// Profile routes
-app.use('/api/profile', profileRoutes);
-
-// Use the booking routes
-app.use('/api/bookings', bookingRoutes);
+// 404 Not Found handler
+app.use((req, res) => {
+  res.status(404).json({ message: 'Route not found' });
+});
 
 // Start the server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+module.exports = app;

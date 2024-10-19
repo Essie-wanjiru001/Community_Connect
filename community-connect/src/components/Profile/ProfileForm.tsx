@@ -3,8 +3,11 @@ import { Formik, Form, Field, ErrorMessage, FieldArray } from 'formik';
 import * as Yup from 'yup';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
 import { RootState, AppDispatch } from '../redux/store';
 import { updateProfileAsync, fetchProfileAsync } from '../redux/slices/profileSlice';
+
 
 interface User {
   id: string;
@@ -26,10 +29,10 @@ interface ConsumerProfile extends BaseProfile {
 interface ArtisanProfile extends BaseProfile {
   serviceType: string;
   charges: string;
-  availability: { day: string; startTime: string; endTime: string }[];
+  availability: { date: Date; startTime: string; endTime: string }[];
   servicePhotos?: string[];
   calendarSettings: {
-    bookingNotice: number;
+    advanceBookings: number;
   };
 }
 
@@ -50,13 +53,14 @@ type ProfileFormData = {
   bio?: string;
   serviceType?: string;
   charges?: string;
-  availability?: { day: string; startTime: string; endTime: string }[];
+  availability?: { date: Date | null; startTime: string; endTime: string }[];
   businessCategory?: string;
   openHours?: string;
   calendarSettings?: {
-    bookingNotice: number;
+    advanceBookings: number;
   };
 };
+
 
 const ProfileForm: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -108,7 +112,7 @@ const ProfileForm: React.FC = () => {
     availability: user.userType === 'artisan' 
       ? Yup.array().of(
           Yup.object().shape({
-            day: Yup.string().required('Day is required'),
+            date: Yup.date().required('Date is required'),
             startTime: Yup.string().required('Start time is required'),
             endTime: Yup.string()
               .required('End time is required')
@@ -122,10 +126,10 @@ const ProfileForm: React.FC = () => {
     
     calendarSettings: user.userType === 'artisan'
       ? Yup.object().shape({
-          bookingNotice: Yup.number()
-            .min(0, 'Booking notice must be a non-negative number')
-            .max(72, 'Booking notice cannot exceed 72 hours')
-            .required('Booking notice is required'),
+          advanceBookings: Yup.number()
+            .min(1, 'Advance bookings must be at least 1 day')
+            .max(365, 'Advance bookings cannot exceed 365 days')
+            .required('Advance bookings is required'),
         })
       : Yup.object().optional(),
   });
@@ -168,11 +172,19 @@ const ProfileForm: React.FC = () => {
     bio: user.userType === 'consumer' ? (profile as ConsumerProfile)?.bio : undefined,
     serviceType: user.userType === 'artisan' ? (profile as ArtisanProfile)?.serviceType : undefined,
     charges: user.userType === 'artisan' ? (profile as ArtisanProfile)?.charges : undefined,
-    availability: user.userType === 'artisan' ? (profile as ArtisanProfile)?.availability : undefined,
+    
     businessCategory: user.userType === 'business' ? (profile as BusinessProfile)?.businessCategory : undefined,
     openHours: user.userType === 'business' ? (profile as BusinessProfile)?.openHours : undefined,
-    calendarSettings: user.userType === 'artisan' ? (profile as ArtisanProfile)?.calendarSettings : undefined,
+    
+    availability: user.userType === 'artisan' ? (profile as ArtisanProfile)?.availability.map(slot => ({
+      ...slot,
+      date: new Date(slot.date)
+    })) : undefined,
+    calendarSettings: user.userType === 'artisan' ? {
+      advanceBookings: (profile as ArtisanProfile)?.calendarSettings?.advanceBookings || 30,
+    } : undefined,
   };
+  
 
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
@@ -187,224 +199,180 @@ const ProfileForm: React.FC = () => {
       )}
       
       <Formik
-        initialValues={initialValues}
-        validationSchema={validationSchema}
-        onSubmit={handleSubmit}
-      >
-        {({ values }) => (
-          <Form className="space-y-6">
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name</label>
-                <Field
-                  id="name"
-                  name="name"
-                  type="text"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-                <ErrorMessage name="name" component="div" className="mt-1 text-sm text-red-600" />
-              </div>
+  initialValues={initialValues}
+  validationSchema={validationSchema}
+  onSubmit={handleSubmit}
+>
+  {({ values, setFieldValue }) => (
+    <Form className="space-y-6">
+      {/* Common fields for all user types */}
+      <div>
+        <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name</label>
+        <Field
+          id="name"
+          name="name"
+          type="text"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+        <ErrorMessage name="name" component="div" className="mt-1 text-sm text-red-600" />
+      </div>
 
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-                <Field
-                  id="email"
-                  name="email"
-                  type="email"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-                <ErrorMessage name="email" component="div" className="mt-1 text-sm text-red-600" />
-              </div>
+      <div>
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+        <Field
+          id="email"
+          name="email"
+          type="email"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+        <ErrorMessage name="email" component="div" className="mt-1 text-sm text-red-600" />
+      </div>
 
-              <div>
-                <label htmlFor="telephone" className="block text-sm font-medium text-gray-700">Telephone</label>
-                <Field
-                  id="telephone"
-                  name="telephone"
-                  type="tel"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-                <ErrorMessage name="telephone" component="div" className="mt-1 text-sm text-red-600" />
-              </div>
+      <div>
+        <label htmlFor="telephone" className="block text-sm font-medium text-gray-700">Telephone</label>
+        <Field
+          id="telephone"
+          name="telephone"
+          type="tel"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+        <ErrorMessage name="telephone" component="div" className="mt-1 text-sm text-red-600" />
+      </div>
 
-              <div>
-                <label htmlFor="location" className="block text-sm font-medium text-gray-700">Location</label>
-                <Field
-                  id="location"
-                  name="location"
-                  type="text"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-                <ErrorMessage name="location" component="div" className="mt-1 text-sm text-red-600" />
-              </div>
+      <div>
+        <label htmlFor="location" className="block text-sm font-medium text-gray-700">Location</label>
+        <Field
+          id="location"
+          name="location"
+          type="text"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+        <ErrorMessage name="location" component="div" className="mt-1 text-sm text-red-600" />
+      </div>
 
-              {user.userType === 'consumer' && (
+      {/* Artisan-specific fields */}
+      {user.userType === 'artisan' && (
+              <>
                 <div>
-                  <label htmlFor="bio" className="block text-sm font-medium text-gray-700">Bio</label>
+                  <label htmlFor="serviceType" className="block text-sm font-medium text-gray-700">Service Type</label>
                   <Field
-                    id="bio"
-                    name="bio"
-                    component="textarea"
+                    id="serviceType"
+                    name="serviceType"
+                    type="text"
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   />
-                  <ErrorMessage name="bio" component="div" className="mt-1 text-sm text-red-600" />
+                  <ErrorMessage name="serviceType" component="div" className="mt-1 text-sm text-red-600" />
                 </div>
-              )}
 
-              {user.userType === 'artisan' && (
-                <>
-                  <div>
-                    <label htmlFor="serviceType" className="block text-sm font-medium text-gray-700">Service Type</label>
-                    <Field
-                      id="serviceType"
-                      name="serviceType"
-                      type="text"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                    <ErrorMessage name="serviceType" component="div" className="mt-1 text-sm text-red-600" />
-                  </div>
+                <div>
+                  <label htmlFor="charges" className="block text-sm font-medium text-gray-700">Charges</label>
+                  <Field
+                    id="charges"
+                    name="charges"
+                    type="text"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                  <ErrorMessage name="charges" component="div" className="mt-1 text-sm text-red-600" />
+                </div>
 
-                  <div>
-                    <label htmlFor="charges" className="block text-sm font-medium text-gray-700">Charges</label>
-                    <Field
-                      id="charges"
-                      name="charges"
-                      type="text"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                    <ErrorMessage name="charges" component="div" className="mt-1 text-sm text-red-600" />
-                  </div>
-
-                  <FieldArray name="availability">
-                    {({ push, remove }) => (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Availability</label>
-                        {values.availability && values.availability.length > 0 ? (
-                          values.availability.map((_, index) => (
-                            <div key={index} className="border rounded-md p-4 mb-4">
-                              <div className="grid grid-cols-3 gap-4">
-                                <div>
-                                  <label htmlFor={`availability.${index}.day`} className="block text-sm font-medium text-gray-700">Day</label>
-                                  <Field
-                                    as="select"
-                                    id={`availability.${index}.day`}
-                                    name={`availability.${index}.day`}
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                  >
-                                    <option value="">Select a day</option>
-                                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
-                                      <option key={day} value={day}>{day}</option>
-                                    ))}
-                                  </Field>
-                                  <ErrorMessage name={`availability.${index}.day`} component="div" className="mt-1 text-sm text-red-600" />
-                                </div>
-
-                                <div>
-                                  <label htmlFor={`availability.${index}.startTime`} className="block text-sm font-medium text-gray-700">Start Time</label>
-                                  <Field
-                                    id={`availability.${index}.startTime`}
-                                    name={`availability.${index}.startTime`}
-                                    type="time"
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                  />
-                                  <ErrorMessage name={`availability.${index}.startTime`} component="div" className="mt-1 text-sm text-red-600" />
-                                </div>
-
-                                <div>
-                                  <label htmlFor={`availability.${index}.endTime`} className="block text-sm font-medium text-gray-700">End Time</label>
-                                  <Field
-                                    id={`availability.${index}.endTime`}
-                                    name={`availability.${index}.endTime`}
-                                    type="time"
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                  />
-                                  <ErrorMessage name={`availability.${index}.endTime`} component="div" className="mt-1 text-sm text-red-600" />
-                                </div>
+                <FieldArray name="availability">
+                  {({ push, remove }) => (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Availability</label>
+                      {values.availability && values.availability.length > 0 ? (
+                        values.availability.map((slot, index) => (
+                          <div key={index} className="border rounded-md p-4 mb-4">
+                            <div className="grid grid-cols-3 gap-4">
+                              <div>
+                                <label htmlFor={`availability.${index}.date`} className="block text-sm font-medium text-gray-700">Date</label>
+                                <DatePicker
+                                  selected={slot.date}
+                                  onChange={(date: Date | null) => setFieldValue(`availability.${index}.date`, date)}
+                                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                  dateFormat="MM, d, yyyy"
+                                />
+                                <ErrorMessage name={`availability.${index}.date`} component="div" className="mt-1 text-sm text-red-600" />
                               </div>
-                              <button
-                                type="button"
-                                className="mt-2 text-red-600"
-                                onClick={() => remove(index)}
-                              >
-                                Remove
-                              </button>
+
+                              <div>
+                                <label htmlFor={`availability.${index}.startTime`} className="block text-sm font-medium text-gray-700">Start Time</label>
+                                <Field
+                                  id={`availability.${index}.startTime`}
+                                  name={`availability.${index}.startTime`}
+                                  type="time"
+                                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                />
+                                <ErrorMessage name={`availability.${index}.startTime`} component="div" className="mt-1 text-sm text-red-600" />
+                              </div>
+
+                              <div>
+                                <label htmlFor={`availability.${index}.endTime`} className="block text-sm font-medium text-gray-700">End Time</label>
+                                <Field
+                                  id={`availability.${index}.endTime`}
+                                  name={`availability.${index}.endTime`}
+                                  type="time"
+                                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                />
+                                <ErrorMessage name={`availability.${index}.endTime`} component="div" className="mt-1 text-sm text-red-600" />
+                              </div>
                             </div>
-                          ))
-                        ) : (
-                          <p className="text-gray-500">No availability slots added yet.</p>
-                        )}
-                        <button
-                          type="button"
-                          className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
-                          onClick={() => push({ day: '', startTime: '', endTime: '' })}
-                        >
-                          Add Availability Slot
-                        </button>
-                      </div>
-                    )}
-                  </FieldArray>
+                            <button
+                              type="button"
+                              className="mt-2 text-red-600"
+                              onClick={() => remove(index)}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-gray-500">No availability slots added yet.</p>
+                      )}
+                      <button
+                        type="button"
+                        className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
+                        onClick={() => push({ date: new Date(), startTime: '', endTime: '' })}
+                      >
+                        Add Availability Slot
+                      </button>
+                    </div>
+                  )}
+                </FieldArray>
 
-                  <div>
-                    <label htmlFor="calendarSettings.bookingNotice" className="block text-sm font-medium text-gray-700">Booking Notice (in hours)</label>
-                    <Field
-                      id="calendarSettings.bookingNotice"
-                      name="calendarSettings.bookingNotice"
-                      type="number"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                    <ErrorMessage name="calendarSettings.bookingNotice" component="div" className="mt-1 text-sm text-red-600" />
-                  </div>
+                <div>
+                  <label htmlFor="calendarSettings.advanceBookings" className="block text-sm font-medium text-gray-700">Advance Bookings (in days)</label>
+                  <Field
+                    id="calendarSettings.advanceBookings"
+                    name="calendarSettings.advanceBookings"
+                    type="number"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                  <ErrorMessage name="calendarSettings.advanceBookings" component="div" className="mt-1 text-sm text-red-600" />
+                </div>
 
-                  <div>
-                    <label htmlFor="servicePhotos" className="block text-sm font-medium text-gray-700">Upload Service Photos</label>
-                    <input
-                      id="servicePhotos"
-                      name="servicePhotos"
-                      type="file"
-                      multiple
-                      onChange={handleServicePhotosChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                    />
-                  </div>
-                </>
-              )}
+                <div>
+                  <label htmlFor="servicePhotos" className="block text-sm font-medium text-gray-700">Upload Service Photos</label>
+                  <input
+                    id="servicePhotos"
+                    name="servicePhotos"
+                    type="file"
+                    multiple
+                    onChange={handleServicePhotosChange}
+                    className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                  />
+                </div>
+              </>
+            )}
 
-              {user.userType === 'business' && (
-                <>
-                  <div>
-                    <label htmlFor="businessCategory" className="block text-sm font-medium text-gray-700">Business Category</label>
-                    <Field
-                      id="businessCategory"
-                      name="businessCategory"
-                      type="text"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                    <ErrorMessage name="businessCategory" component="div" className="mt-1 text-sm text-red-600" />
-                  </div>
-
-                  <div>
-                    <label htmlFor="openHours" className="block text-sm font-medium text-gray-700">Open Hours</label>
-                    <Field
-                      id="openHours"
-                      name="openHours"
-                      type="text"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                    <ErrorMessage name="openHours" component="div" className="mt-1 text-sm text-red-600" />
-                  </div>
-                </>
-              )}
-
-              <div>
-                <label htmlFor="profilePhoto" className="block text-sm font-medium text-gray-700">Upload Profile Photo</label>
-                <input
-                  id="profilePhoto"
-                  name="profilePhoto"
-                  type="file"
-                  onChange={handleProfilePhotoChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                />
-              </div>
+            <div>
+              <label htmlFor="profilePhoto" className="block text-sm font-medium text-gray-700">Upload Profile Photo</label>
+              <input
+                id="profilePhoto"
+                name="profilePhoto"
+                type="file"
+                onChange={handleProfilePhotoChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+              />
             </div>
 
             <button

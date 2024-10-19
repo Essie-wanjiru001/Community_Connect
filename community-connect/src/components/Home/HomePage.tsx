@@ -5,6 +5,7 @@ import { FaSearch, FaCouch, FaBroom, FaTools, FaDollarSign, FaExchangeAlt } from
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchArtisanProfiles } from '../../services/api';
 
+
 interface ArtisanProfile {
   _id: string;
   user: {
@@ -26,18 +27,23 @@ const HomePage: React.FC = () => {
     const loadArtisanProfiles = async () => {
       try {
         setLoading(true);
-        const profiles = await fetchArtisanProfiles();
-        setArtisanProfiles(profiles);
-        setLoading(false);
+        const response = await fetchArtisanProfiles();
+        if (response && 'data' in response && response.status === 200) {
+          setArtisanProfiles(response.data);
+        } else {
+          setError('Failed to load services. Please try again later.');
+        }
       } catch (error) {
         console.error('Error loading artisan profiles:', error);
         setError('Failed to load services. Please try again later.');
+      } finally {
         setLoading(false);
       }
     };
 
     loadArtisanProfiles();
   }, []);
+
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -227,7 +233,7 @@ const HomePage: React.FC = () => {
                   <div className="absolute inset-0 bg-black opacity-50 group-hover:opacity-75 transition duration-300 rounded-lg"></div>
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
                     <h3 className="text-2xl font-semibold">{profile.serviceType}</h3>
-                    <p className="mt-2">Starting at ${profile.charges}</p>
+                    <p className="mt-2">Starting at {profile.charges}</p>
                     <Link 
                       to={`/booking/new/${profile.user._id}`} 
                       className="mt-4 bg-blue-500 px-4 py-2 rounded-md text-white hover:bg-blue-600 transition"

@@ -1,44 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import { fetchAvailableSlots, createBooking } from '../redux/slices/bookingSlice';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
 import { RootState, AppDispatch } from '../redux/store';
+import { fetchArtisanProfile, fetchAvailableSlots, createBooking } from '../redux/slices/bookingSlice';
 
-interface BookingFormValues {
-  date: string;
-  slot: string;
-}
-
-interface TimeSlot {
+interface AvailableSlot {
   startTime: string;
   endTime: string;
-}
-
-// Define the structure of the booking slice in the Redux store
-interface BookingState {
-  availableSlots: TimeSlot[];
-  loading: boolean;
-  error: string | null;
 }
 
 const BookingForm: React.FC = () => {
   const { artisanId } = useParams<{ artisanId: string }>();
   const dispatch = useDispatch<AppDispatch>();
-  const { availableSlots, loading, error } = useSelector((state: RootState) => state.booking as BookingState);
-
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  const navigate = useNavigate();
+  const { artisanProfile, availableSlots, loading, error } = useSelector((state: RootState) => state.booking);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   useEffect(() => {
-    if (selectedDate && artisanId) {
-      dispatch(fetchAvailableSlots({ artisanId, date: selectedDate }));
+    if (artisanId) {
+      console.log('Fetching artisan profile for ID:', artisanId);
+      dispatch(fetchArtisanProfile(artisanId));
     }
-  }, [dispatch, artisanId, selectedDate]);
+  }, [dispatch, artisanId]);
 
-  const initialValues: BookingFormValues = {
-    date: '',
-    slot: '',
+  const handleDateChange = (date: Date | null) => {
+    setSelectedDate(date);
+    if (date && artisanId) {
+      console.log('Fetching available slots for date:', date.toISOString().split('T')[0]);
+      dispatch(fetchAvailableSlots({ artisanId, date: date.toISOString().split('T')[0] }));
+    }
   };
 
   const validationSchema = Yup.object({
@@ -46,67 +40,73 @@ const BookingForm: React.FC = () => {
     slot: Yup.string().required('Time slot is required'),
   });
 
-  const handleSubmit = async (values: BookingFormValues) => {
-    if (artisanId) {
-      await dispatch(createBooking({ artisanId, ...values }));
-      // Handle success (e.g., show a success message, redirect to bookings list)
+  const handleSubmit = async (values: { date: Date | null; slot: string }) => {
+    if (artisanId && values.date && values.slot && artisanProfile) {
+      console.log('Creating booking:', { artisanId, date: values.date, slot: values.slot });
+      const result = await dispatch(createBooking({ 
+        artisanId, 
+        date: values.date.toISOString().split('T')[0], 
+        slot: values.slot,
+        service: artisanProfile.serviceType || ''
+      }));
+      if (createBooking.fulfilled.match(result)) {
+        console.log('Booking created successfully');
+        navigate('/booking/list');
+      } else {
+        console.error('Failed to create booking:', result.error);
+      }
     }
   };
 
+  if (loading) return <div className="text-center mt-8">Loading...</div>;
+  if (error) return <div className="text-center mt-8 text-red-500">Error: {error}</div>;
+  if (!artisanProfile) return <div className="text-center mt-8">No artisan profile found. Please try again later.</div>;
+
   return (
-    <div className="max-w-md mx-auto mt-10">
-      <h2 className="text-2xl font-bold mb-4">Book a Service</h2>
+    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold mb-6">Book a Service with {artisanProfile.user.name}</h2>
+      <p>Service: {artisanProfile.serviceType}</p>
+      <p>Location: {artisanProfile.location}</p>
+      <p>Contact: {artisanProfile.telephone}</p>
+      <p>Email: {artisanProfile.email}</p>
+
       <Formik
-        initialValues={initialValues}
+        initialValues={{ date: null as Date | null, slot: '' }}
         validationSchema={validationSchema}
         onSubmit={handleSubmit}
       >
         {({ setFieldValue }) => (
-          <Form className="space-y-4">
-            <div>
-              <label htmlFor="date" className="block text-sm font-medium text-gray-700">Date</label>
-              <Field
-                type="date"
-                id="date"
-                name="date"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setFieldValue('date', e.target.value);
-                  setSelectedDate(e.target.value);
+          <Form className="mt-6">
+            <div className="mb-4">
+              <label htmlFor="date" className="block text-sm font-medium text-gray-700">Select Date</label>
+              <DatePicker
+                selected={selectedDate}
+                onChange={(date: Date | null) => {
+                  handleDateChange(date);
+                  setFieldValue('date', date);
                 }}
+                minDate={new Date()}
+                maxDate={new Date(Date.now() + (artisanProfile.calendarSettings?.advanceBookings || 30) * 24 * 60 * 60 * 1000)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
-              <ErrorMessage name="date" component="div" className="text-red-500 text-sm" />
+              <ErrorMessage name="date" component="div" className="mt-1 text-sm text-red-600" />
             </div>
 
-            {selectedDate && (
-              <div>
-                <label htmlFor="slot" className="block text-sm font-medium text-gray-700">Time Slot</label>
-                <Field
-                  as="select"
-                  id="slot"
-                  name="slot"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                >
-                  <option value="">Select a time slot</option>
-                  {availableSlots.map((slot: TimeSlot, index: number) => (
-                    <option key={index} value={`${slot.startTime}-${slot.endTime}`}>
-                      {slot.startTime} - {slot.endTime}
-                    </option>
-                  ))}
-                </Field>
-                <ErrorMessage name="slot" component="div" className="text-red-500 text-sm" />
-              </div>
-            )}
+            <div className="mb-4">
+              <label htmlFor="slot" className="block text-sm font-medium text-gray-700">Select Time Slot</label>
+              <Field as="select" name="slot" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <option value="">Select a time slot</option>
+                {availableSlots.map((slot: AvailableSlot, index: number) => (
+                  <option key={index} value={`${slot.startTime}-${slot.endTime}`}>
+                    {slot.startTime} - {slot.endTime}
+                  </option>
+                ))}
+              </Field>
+              <ErrorMessage name="slot" component="div" className="mt-1 text-sm text-red-600" />
+            </div>
 
-            {loading && <div>Loading available slots...</div>}
-            {error && <div className="text-red-500">{error}</div>}
-
-            <button
-              type="submit"
-              className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-              disabled={loading}
-            >
-              Book Appointment
+            <button type="submit" className="w-full bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors">
+              Book Service
             </button>
           </Form>
         )}

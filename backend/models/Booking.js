@@ -49,7 +49,6 @@ const bookingSchema = new mongoose.Schema({
   }
 });
 
-// Add a pre-save hook to update the updatedAt field
 bookingSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   next();

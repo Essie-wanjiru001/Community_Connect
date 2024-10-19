@@ -1,37 +1,125 @@
 import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, AppDispatch } from '../redux/store';
+import { fetchUserBookings, fetchArtisanBookings, updateBookingStatus } from '../redux/slices/bookingSlice';
+import { useAuth } from '../../contexts/AuthContext';
 
-const BookingList = () => {
-  interface Booking {
-    serviceProvider: string;
-    date: string;
-  }
-  
-  const [bookings, setBookings] = useState<Booking[]>([]);
+interface Booking {
+  _id: string;
+  artisan: { _id: string; name: string };
+  consumer: { _id: string; name: string };
+  service: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  totalPrice: number;
+}
+
+const BookingList: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { user } = useAuth();
+  const { bookings, loading, error } = useSelector((state: RootState) => state.booking);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   useEffect(() => {
-    // Fetch bookings from the backend
-    setBookings([
-      { serviceProvider: 'John Doe', date: '2023-10-15' },
-      { serviceProvider: 'Jane Smith', date: '2023-10-20' },
-    ]);
-  }, []);
+    if (user) {
+      if (user.userType === 'artisan') {
+        dispatch(fetchArtisanBookings());
+      } else {
+        dispatch(fetchUserBookings());
+      }
+    }
+  }, [dispatch, user]);
+
+  const handleStatusUpdate = (bookingId: string, newStatus: string) => {
+    dispatch(updateBookingStatus({ bookingId, status: newStatus }));
+  };
+
+  const filteredBookings = bookings.filter((booking: Booking) => 
+    statusFilter === 'all' || booking.status === statusFilter
+  );
+
+  if (loading) return <div className="text-center mt-8">Loading...</div>;
+  if (error) return <div className="text-center mt-8 text-red-500">Error: {error}</div>;
+  if (!bookings || bookings.length === 0) return <div className="text-center mt-8">No bookings found.</div>;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="w-full max-w-lg p-8 bg-white rounded-lg shadow-lg">
-        <h2 className="text-3xl font-bold mb-6 text-gray-800 text-center">Your Bookings</h2>
-        {bookings.length > 0 ? (
-          <ul className="space-y-4">
-            {bookings.map((booking, index) => (
-              <li key={index} className="border-b pb-4">
-                <p className="text-lg text-gray-700"><strong>Service Provider:</strong> {booking.serviceProvider}</p>
-                <p className="text-lg text-gray-700"><strong>Date:</strong> {new Date(booking.date).toLocaleDateString()}</p>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-center text-gray-700">No bookings found.</p>
-        )}
+    <div className="container mx-auto px-4 py-8">
+      <h2 className="text-3xl font-bold mb-6">My Bookings</h2>
+      
+      <div className="mb-4">
+        <label htmlFor="statusFilter" className="mr-2">Filter by status:</label>
+        <select
+          id="statusFilter"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="border rounded p-2"
+        >
+          <option value="all">All</option>
+          <option value="pending">Pending</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredBookings.map((booking: Booking) => (
+          <div key={booking._id} className="bg-white shadow-md rounded-lg p-6">
+            <h3 className="text-xl font-semibold mb-2">{booking.service}</h3>
+            <p className="text-gray-600 mb-2">
+              Date: {new Date(booking.date).toLocaleDateString()}
+            </p>
+            <p className="text-gray-600 mb-2">
+              Time: {booking.startTime} - {booking.endTime}
+            </p>
+            <p className="text-gray-600 mb-2">
+              Status: <span className={`font-semibold ${
+                booking.status === 'confirmed' ? 'text-green-500' :
+                booking.status === 'cancelled' ? 'text-red-500' :
+                booking.status === 'completed' ? 'text-blue-500' :
+                'text-yellow-500'
+              }`}>{booking.status}</span>
+            </p>
+            <p className="text-gray-600 mb-4">
+              Total Price: ${booking.totalPrice.toFixed(2)}
+            </p>
+            
+            {user?.userType === 'artisan' ? (
+              <>
+                <p className="text-gray-600 mb-2">Customer: {booking.consumer.name}</p>
+                {booking.status === 'pending' && (
+                  <div className="flex space-x-2 mt-4">
+                    <button
+                      onClick={() => handleStatusUpdate(booking._id, 'confirmed')}
+                      className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      onClick={() => handleStatusUpdate(booking._id, 'cancelled')}
+                      className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors"
+                    >
+                      Decline
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-gray-600 mb-2">Service Provider: {booking.artisan.name}</p>
+            )}
+            
+            {(user?.userType === 'artisan' || booking.status === 'confirmed') && (
+              <button
+                onClick={() => handleStatusUpdate(booking._id, 'completed')}
+                className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+              >
+                Mark as Completed
+              </button>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
