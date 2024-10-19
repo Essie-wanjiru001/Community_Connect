@@ -1,11 +1,14 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import * as api from '../../../services/api';
 
+// Interfaces
+interface User {
+  _id: string;
+  name: string;
+}
+
 interface ArtisanProfile {
-  user: {
-    _id: string;
-    name: string;
-  };
+  user: User;
   name: string;
   serviceType: string;
   location: string;
@@ -23,8 +26,8 @@ interface AvailableSlot {
 
 interface Booking {
   _id: string;
-  artisan: { _id: string; name: string };
-  consumer: { _id: string; name: string };
+  artisan: User;
+  consumer: User;
   service: string;
   date: string;
   startTime: string;
@@ -41,6 +44,7 @@ interface BookingState {
   error: string | null;
 }
 
+// Initial State
 const initialState: BookingState = {
   artisanProfile: null,
   availableSlots: [],
@@ -49,85 +53,82 @@ const initialState: BookingState = {
   error: null,
 };
 
+// Async Thunks
 export const fetchArtisanProfile = createAsyncThunk(
   'booking/fetchArtisanProfile',
   async (artisanId: string, { rejectWithValue }) => {
     try {
       const response = await api.fetchArtisanProfiles();
-      console.log('Full API Response:', response);
 
-      if (!response || response.status !== 200) {
-        console.error('API request failed:', response);
-        return rejectWithValue('API request failed');
-      }
-
-      if (!response.data) {
-        console.error('API response data is undefined');
-        return rejectWithValue('API response data is undefined');
-      }
-
-      console.log('API Response data:', response.data);
-
-      if (!Array.isArray(response.data)) {
-        console.error('Unexpected API response structure:', response.data);
-        return rejectWithValue('Unexpected API response structure');
+      if (!response || response.status !== 200 || !response.data) {
+        throw new Error('Failed to fetch artisan profiles');
       }
 
       const artisan = response.data.find((profile: ArtisanProfile) => profile.user._id === artisanId);
-      
-      if (!artisan) {
-        console.error('Artisan not found:', artisanId);
-        return rejectWithValue('Artisan not found');
-      }
+      if (!artisan) throw new Error('Artisan not found');
 
       return artisan;
     } catch (error) {
-      console.error('Error fetching artisan profile:', error);
-      return rejectWithValue(error instanceof Error ? error.message : 'An unknown error occurred');
+      return rejectWithValue(error instanceof Error ? error.message : 'Unknown error');
     }
   }
 );
 
 export const fetchAvailableSlots = createAsyncThunk(
   'booking/fetchAvailableSlots',
-  async ({ artisanId, date }: { artisanId: string; date: string }) => {
-    const response = await api.fetchAvailableTimeSlots(artisanId, date);
-    return response.data;
+  async ({ artisanId, date }: { artisanId: string; date: string }, { rejectWithValue }) => {
+    try {
+      const response = await api.fetchAvailableTimeSlots(artisanId, date);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue('Failed to fetch available slots');
+    }
   }
 );
 
 export const createBooking = createAsyncThunk(
   'booking/createBooking',
-  async ({ artisanId, date, slot, service }: { artisanId: string; date: string; slot: string; service: string }) => {
-    const response = await api.createNewBooking(artisanId, date, slot, service);
-    return response.data;
+  async ({ artisanId, date, slot, service }: { artisanId: string; date: string; slot: string; service: string }, { rejectWithValue }) => {
+    try {
+      const response = await api.createNewBooking(artisanId, date, slot, service);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue('Failed to create booking');
+    }
   }
 );
 
-export const fetchUserBookings = createAsyncThunk(
-  'booking/fetchUserBookings',
-  async () => {
+export const fetchUserBookings = createAsyncThunk('booking/fetchUserBookings', async (_, { rejectWithValue }) => {
+  try {
     const response = await api.fetchUserBookings();
     return response.data;
+  } catch (error) {
+    return rejectWithValue('Failed to fetch user bookings');
   }
-);
+});
 
-export const fetchArtisanBookings = createAsyncThunk(
-  'booking/fetchArtisanBookings',
-  async () => {
+export const fetchArtisanBookings = createAsyncThunk('booking/fetchArtisanBookings', async (_, { rejectWithValue }) => {
+  try {
     const response = await api.fetchArtisanBookings();
     return response.data;
+  } catch (error) {
+    return rejectWithValue('Failed to fetch artisan bookings');
   }
-);
+});
 
 export const updateBookingStatus = createAsyncThunk(
   'booking/updateBookingStatus',
-  async ({ bookingId, status }: { bookingId: string; status: string }) => {
-    const response = await api.updateBookingStatus(bookingId, status);
-    return response.data;
+  async ({ bookingId, status }: { bookingId: string; status: string }, { rejectWithValue }) => {
+    try {
+      const response = await api.updateBookingStatus(bookingId, status);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue('Failed to update booking status');
+    }
   }
 );
 
+// Booking Slice
 const bookingSlice = createSlice({
   name: 'booking',
   initialState,
@@ -141,68 +142,49 @@ const bookingSlice = createSlice({
       .addCase(fetchArtisanProfile.fulfilled, (state, action: PayloadAction<ArtisanProfile>) => {
         state.loading = false;
         state.artisanProfile = action.payload;
-        state.error = null;
       })
       .addCase(fetchArtisanProfile.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload as string || 'Failed to fetch artisan profile';
-        console.error('Fetch artisan profile rejected:', action.payload);
+        state.error = action.payload as string;
       })
+
       .addCase(fetchAvailableSlots.fulfilled, (state, action: PayloadAction<AvailableSlot[]>) => {
-        state.loading = false;
         state.availableSlots = action.payload;
       })
       .addCase(fetchAvailableSlots.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Failed to fetch available slots';
+        state.error = action.payload as string;
       })
-      .addCase(createBooking.pending, (state) => {
-        state.loading = true;
-      })
+
       .addCase(createBooking.fulfilled, (state, action: PayloadAction<Booking>) => {
-        state.loading = false;
         state.bookings.push(action.payload);
       })
       .addCase(createBooking.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Failed to create booking';
+        state.error = action.payload as string;
       })
-      .addCase(fetchUserBookings.pending, (state) => {
-        state.loading = true;
-      })
+
       .addCase(fetchUserBookings.fulfilled, (state, action: PayloadAction<Booking[]>) => {
-        state.loading = false;
         state.bookings = action.payload;
       })
       .addCase(fetchUserBookings.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Failed to fetch user bookings';
+        state.error = action.payload as string;
       })
-      .addCase(fetchArtisanBookings.pending, (state) => {
-        state.loading = true;
-      })
+
       .addCase(fetchArtisanBookings.fulfilled, (state, action: PayloadAction<Booking[]>) => {
-        state.loading = false;
         state.bookings = action.payload;
       })
       .addCase(fetchArtisanBookings.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Failed to fetch artisan bookings';
+        state.error = action.payload as string;
       })
-      .addCase(updateBookingStatus.pending, (state) => {
-        state.loading = true;
-      })
+
       .addCase(updateBookingStatus.fulfilled, (state, action: PayloadAction<Booking>) => {
-        state.loading = false;
         const updatedBooking = action.payload;
-        const index = state.bookings.findIndex(booking => booking._id === updatedBooking._id);
+        const index = state.bookings.findIndex((booking) => booking._id === updatedBooking._id);
         if (index !== -1) {
           state.bookings[index] = updatedBooking;
         }
       })
       .addCase(updateBookingStatus.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Failed to update booking status';
+        state.error = action.payload as string;
       });
   },
 });
