@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -20,54 +20,57 @@ const ChatPage: React.FC<{ otherUserId: string; otherUserName: string }> = ({
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Initialize Socket.IO and setup listeners
+  const roomId = user ? [user.id, otherUserId].sort().join('-') : '';
+
+  // Memoize the function to get persisted messages
+  const getPersistedMessages = useCallback((): Message[] => {
+    const savedMessages = localStorage.getItem(roomId);
+    return savedMessages ? JSON.parse(savedMessages) : [];
+  }, [roomId]);
+
+  // Initialize socket and handle events
   useEffect(() => {
     if (!user) return;
 
-    // Ensure we don't reconnect multiple times
-    if (!socketRef.current) {
-      const socket = io('http://localhost:5000', {
-        transports: ['websocket'],
-        reconnectionAttempts: 5,
-      });
+    setMessages(getPersistedMessages()); // Load persisted messages on mount
 
-      socketRef.current = socket;
+    const socket = io('http://localhost:5000', {
+      transports: ['websocket'],
+      reconnectionAttempts: 5,
+    });
 
-      const roomId = [user.id, otherUserId].sort().join('-');
-      socket.emit('join room', { userId: user.id, otherUserId });
+    socketRef.current = socket;
 
-      // Fetch previous messages when joining the room
-      socket.emit('fetch messages', roomId);
+    // Join the room and fetch previous messages
+    socket.emit('join room', { userId: user.id, otherUserId });
+    socket.emit('fetch messages', roomId);
 
-      // Listen for previous messages
-      socket.on('previous messages', (msgs: Message[]) => {
-        setMessages(msgs);
-      });
+    socket.on('previous messages', (msgs: Message[]) => {
+      const allMessages = [...getPersistedMessages(), ...msgs];
+      setMessages(allMessages);
+      localStorage.setItem(roomId, JSON.stringify(allMessages));
+    });
 
-      // Listen for new incoming chat messages
-      socket.on('chat message', (msg: Message) => {
-        setMessages((prev) => [...prev, msg]);
-      });
+    socket.on('chat message', (msg: Message) => {
+      const updatedMessages = [...messages, msg];
+      setMessages(updatedMessages);
+      localStorage.setItem(roomId, JSON.stringify(updatedMessages));
+    });
 
-      // Listen for typing indicator from other users
-      socket.on('typing', ({ sender }) => {
-        if (sender !== user.name) {
-          setIsTyping(true);
-          setTimeout(() => setIsTyping(false), 3000);
-        }
-      });
-    }
-
-    // Cleanup: Disconnect socket and remove listeners on unmount
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
+    socket.on('typing', ({ sender }) => {
+      if (sender !== user.name) {
+        setIsTyping(true);
+        setTimeout(() => setIsTyping(false), 3000);
       }
-    };
-  }, [user, otherUserId]);
+    });
 
-  // Scroll to the latest message when messages update
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [user, otherUserId, roomId, getPersistedMessages, messages]);
+
+  // Scroll to the latest message when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -83,6 +86,9 @@ const ChatPage: React.FC<{ otherUserId: string; otherUserName: string }> = ({
       };
 
       socketRef.current.emit('chat message', newMessage);
+      const updatedMessages = [...messages, newMessage];
+      setMessages(updatedMessages);
+      localStorage.setItem(roomId, JSON.stringify(updatedMessages));
       setMessage('');
     }
   };
@@ -138,9 +144,7 @@ const ChatPage: React.FC<{ otherUserId: string; otherUserName: string }> = ({
         </div>
 
         {isTyping && (
-          <p className="text-sm text-gray-500 mb-2">
-            {otherUserName} is typing...
-          </p>
+          <p className="text-sm text-gray-500 mb-2">{otherUserName} is typing...</p>
         )}
 
         <form onSubmit={sendMessage} className="flex items-center space-x-3">
@@ -148,7 +152,7 @@ const ChatPage: React.FC<{ otherUserId: string; otherUserName: string }> = ({
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleTyping} // Updated from onKeyPress to onKeyDown
+            onKeyDown={handleTyping}
             className="flex-1 p-3 border rounded-full focus:outline-none focus:ring focus:ring-indigo-300"
             placeholder="Type a message..."
           />
