@@ -16,7 +16,7 @@ const app = express();
 const server = http.createServer(app); // Creating the HTTP server
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: ['http://localhost:3000', 'https://community-connect-u6jk.onrender.com'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true,
   },
