@@ -5,6 +5,13 @@
         "src": "/(.*)",
         "dest": "app.js"
       }
-    ]
+    ],
+    "builds": [
+      {
+        "src": "app.js",
+        "use": "@vercel/node"
+      }
+    ],
+    "outputDirectory": "."
   }
   
