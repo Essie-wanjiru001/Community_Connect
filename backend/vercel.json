@@ -1,11 +1,12 @@
 {
     "version": 2,
-    "routes": [
-      {
-        "src": "/(.*)",
-        "dest": "app.js"
+    "functions": {
+      "api/*.js": {
+        "runtime": "nodejs14.x"
       }
-    ],
-    "outputDirectory": "."
+    },
+    "routes": [
+      { "src": "/api/(.*)", "dest": "/api/$1.js" }
+    ]
   }
   
