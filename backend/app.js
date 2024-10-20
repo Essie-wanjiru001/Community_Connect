@@ -16,7 +16,7 @@ const app = express();
 const server = http.createServer(app); // Creating the HTTP server
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:3000', 'https://community-connect-u6jk.onrender.com'],
+    origin: ['http://localhost:3000', 'https://community-connect-u6jk.onrender.com', "https://community-connect-five.vercel.app/"],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true,
   },
