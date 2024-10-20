@@ -1,31 +1,33 @@
 require('dotenv').config();
 const express = require('express');
-const http = require('http'); // Needed for Socket.IO
+const http = require('http'); // HTTP server for Socket.IO
 const { Server } = require('socket.io'); // Importing Socket.IO
-const connectDB = require('./config/db');
+const connectDB = require('./config/db'); // MongoDB connection
 const cors = require('cors');
-const authRoutes = require('./routes/auth');
-const profileRoutes = require('./routes/profileRoutes');
-const bookingRoutes = require('./routes/bookingRoutes');
 const passport = require('passport');
 const session = require('express-session');
 
+// Importing Routes
+const authRoutes = require('./routes/auth');
+const profileRoutes = require('./routes/profileRoutes');
+const bookingRoutes = require('./routes/bookingRoutes');
+
 const app = express();
-const server = http.createServer(app); // Create an HTTP server
+const server = http.createServer(app); // Creating the HTTP server
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:3000',
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true,
   },
 });
 
-// Connect to the database
+// **Connect to the Database**
 connectDB()
   .then(() => console.log('Connected to MongoDB'))
   .catch((err) => console.error('Error connecting to MongoDB:', err));
 
-// Middleware for session management
+// **Session Middleware**
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'your-secret-key',
@@ -39,37 +41,33 @@ app.use(
   })
 );
 
-// Initialize Passport.js
+// **Initialize Passport.js**
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Enable CORS for the frontend
+// **Enable CORS for the Frontend**
 const corsOptions = {
-  origin: 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true,
 };
 app.use(cors(corsOptions));
 
-// Middleware for parsing JSON and URL-encoded data
+// **Body Parsers**
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Basic route for testing the server
+// **Test Route**
 app.get('/', (req, res) => {
   res.send('Hello, welcome to the Community Connect API!');
 });
 
-// Authentication routes
+// **Routes**
 app.use('/api/auth', authRoutes);
-
-// Profile routes
 app.use('/api/profile', profileRoutes);
-
-// Booking routes
 app.use('/api/bookings', bookingRoutes);
 
-// Handle WebSocket connections
+// **Socket.IO Event Handling**
 io.on('connection', (socket) => {
   console.log(`New client connected: ${socket.id}`);
 
@@ -82,6 +80,7 @@ io.on('connection', (socket) => {
   socket.on('chat message', (msg) => {
     const roomId = [msg.sender, msg.receiver].sort().join('-');
     io.to(roomId).emit('chat message', msg);
+    console.log(`Message sent to room ${roomId}:`, msg);
   });
 
   socket.on('disconnect', () => {
@@ -89,7 +88,7 @@ io.on('connection', (socket) => {
   });
 });
 
-// Start the server with Socket.IO
+// **Start the Server with Socket.IO**
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
