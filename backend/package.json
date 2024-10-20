@@ -4,6 +4,7 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
+    "build": "echo 'Skipping build step as this is a Node.js backend.'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
