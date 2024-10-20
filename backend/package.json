@@ -3,13 +3,11 @@
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
-    "build": "echo 'Building Backend...'",
     "start": "node app.js",
-    "dev": "nodemon app.js"
+    "build": "echo 'Skipping build step for backend.'"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
-    "bcryptjs": "^2.4.3",
     "connect-mongo": "^5.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
